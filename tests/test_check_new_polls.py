@@ -49,3 +49,27 @@ def test_run_create_issues_declenche_triage_pour_chaque_issue(monkeypatch):
     assert check_new_polls.run_create_issues("MieuxVoter/presidentielle2027", "token-test", 10) == 0
     assert dispatched == [(101, "main"), (102, "main")]
     assert saved == [len(catalog)]
+
+
+def test_rolling_2027_garde_les_notices_rangees_en_primaire(monkeypatch):
+    """10314 (IFOP pour LCI, 14 octobre 2026) est classée « Prim » mais contient des IV."""
+    import check_new_polls as cnp
+
+    catalog = "filename,categorie\n10313-pres-blocus.pdf,Pres\n10314-pres-climat-post-primaire-ifop-lci.pdf,Prim\nx.pdf,Leg\n"
+
+    class _Reponse:
+        def __init__(self, text):
+            self.text = text
+
+        def read(self):
+            return self.text.encode("utf-8")
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+    monkeypatch.setattr(cnp, "urlopen", lambda url, timeout=None: _Reponse(catalog))
+    names = [row["filename"] for row in cnp.get_catalog_polls()]
+    assert names == ["10313-pres-blocus.pdf", "10314-pres-climat-post-primaire-ifop-lci.pdf"]

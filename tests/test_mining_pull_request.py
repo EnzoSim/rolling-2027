@@ -120,3 +120,71 @@ def test_une_pr_incomplete_le_dit_en_tete():
 
 def test_une_pr_complete_ne_parle_pas_d_incomplet():
     assert "Dépouillement incomplet" not in pull_request.body(42, _proposal(), ["model:free"], 5)
+
+
+# --- rolling-2027 : fusion automatique d'un dépouillement complet ---
+
+def _faux_gh(commands):
+    views = {"n": 0}
+
+    def fake_run(command, root, **kwargs):
+        commands.append(command)
+        if command[:3] == ["git", "diff", "--cached"]:
+            return SimpleNamespace(returncode=1, stdout="", stderr="")
+        if command[:3] == ["gh", "pr", "view"]:
+            views["n"] += 1
+            if views["n"] == 1:
+                return SimpleNamespace(returncode=1, stdout="", stderr="not found")
+            return SimpleNamespace(returncode=0, stdout='{"number": 9, "url": "https://example.test/pr/9"}', stderr="")
+        if command[:3] == ["gh", "label", "list"]:
+            return SimpleNamespace(returncode=0, stdout='[{"name": "automated"}, {"name": "needs-human-review"}]', stderr="")
+        if command[:3] == ["gh", "pr", "create"]:
+            return SimpleNamespace(returncode=0, stdout="https://example.test/pr/9\n", stderr="")
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    return fake_run
+
+
+def test_un_depouillement_complet_se_fusionne_seul(monkeypatch, tmp_path):
+    commands = []
+    monkeypatch.setattr(pull_request, "_run", _faux_gh(commands))
+    monkeypatch.setattr(pull_request, "_validate", lambda root: None)
+    proposal = _proposal()
+    proposal.failures = []
+    result = pull_request.create_or_update(42, "EnzoSim/rolling-2027", proposal, tmp_path, automerge=True)
+    create = next(c for c in commands if c[:3] == ["gh", "pr", "create"])
+    assert "--draft" not in create
+    assert ["gh", "pr", "merge", "9", "--repo", "EnzoSim/rolling-2027", "--squash", "--delete-branch"] in commands
+    assert ["gh", "workflow", "run", "post-merge.yml", "--repo", "EnzoSim/rolling-2027", "--ref", "main"] in commands
+    labels = next(c for c in commands if c[:3] == ["gh", "pr", "edit"])
+    assert "needs-human-review" not in labels
+    assert result.merged
+
+
+def test_un_depouillement_incomplet_reste_en_brouillon(monkeypatch, tmp_path):
+    commands = []
+    monkeypatch.setattr(pull_request, "_run", _faux_gh(commands))
+    monkeypatch.setattr(pull_request, "_validate", lambda root: None)
+    proposal = _proposal()
+    proposal.missing = ["page 12 : quota épuisé"]
+    result = pull_request.create_or_update(42, "EnzoSim/rolling-2027", proposal, tmp_path, automerge=True)
+    assert "--draft" in next(c for c in commands if c[:3] == ["gh", "pr", "create"])
+    assert not any(c[:3] == ["gh", "pr", "merge"] for c in commands)
+    assert not result.merged
+
+
+def test_sans_automerge_rien_ne_change(monkeypatch, tmp_path):
+    commands = []
+    monkeypatch.setattr(pull_request, "_run", _faux_gh(commands))
+    monkeypatch.setattr(pull_request, "_validate", lambda root: None)
+    result = pull_request.create_or_update(42, "EnzoSim/rolling-2027", _proposal(), tmp_path)
+    assert "--draft" in next(c for c in commands if c[:3] == ["gh", "pr", "create"])
+    assert not result.merged
+
+
+def test_une_alerte_d_extraction_bloque_la_fusion(monkeypatch, tmp_path):
+    commands = []
+    monkeypatch.setattr(pull_request, "_run", _faux_gh(commands))
+    monkeypatch.setattr(pull_request, "_validate", lambda root: None)
+    result = pull_request.create_or_update(42, "EnzoSim/rolling-2027", _proposal(), tmp_path, automerge=True)
+    assert not result.merged and not any(c[:3] == ["gh", "pr", "merge"] for c in commands)

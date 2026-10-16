@@ -2,8 +2,8 @@ name: Check for New Presidential Polls
 
 on:
   schedule:
-    # Run every day at 9:00 AM UTC
-    - cron: '0 9 * * *'
+    # rolling-2027 : toutes les heures (Mieux Voter : une fois par jour, à 9 h UTC).
+    - cron: '17 * * * *'
   workflow_dispatch: # Allow manual trigger
 
 permissions:

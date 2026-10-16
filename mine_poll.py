@@ -324,9 +324,21 @@ def main(argv=None):
                         csvio.apply(proposal, root)
                         models = [entry["model"] for entry in conversation.log if entry.get("model")]
                         created = pull_request.create_or_update(
-                            args.issue, repo, proposal, root, models=models, calls=conversation.calls
+                            args.issue,
+                            repo,
+                            proposal,
+                            root,
+                            models=models,
+                            calls=conversation.calls,
+                            # rolling-2027 : fusion automatique d'un dépouillement complet.
+                            automerge=os.environ.get("ROLLING_AUTOMERGE") == "1",
                         )
-                        if proposal.missing:
+                        if created.merged:
+                            pr_status = (
+                                f"> ✅ Dépouillement complet, vérifié et fusionné : [#{created.number}]({created.url})"
+                                f" — {len(proposal.polls)} tableau(x). Les fichiers consolidés se régénèrent."
+                            )
+                        elif proposal.missing:
                             pr_status = (
                                 f"> ⚠️ PR brouillon **incomplète** créée ou mise à jour : [#{created.number}]({created.url})"
                                 f" — {len(proposal.polls)} tableau(x), {len(proposal.missing)} page(s) non dépouillée(s)."

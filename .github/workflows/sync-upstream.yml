@@ -1,0 +1,73 @@
+name: Sync Mieux Voter
+
+# rolling-2027 : reprend les sondages ajoutés en amont (MieuxVoter/presidentielle2027),
+# garde les nôtres, puis régénère les fichiers consolidés. Toutes les six heures.
+on:
+  schedule:
+    - cron: '41 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Fusionner l'amont
+        id: merge
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add upstream https://github.com/MieuxVoter/presidentielle2027.git
+          git fetch --quiet upstream main
+          if git merge-base --is-ancestor upstream/main HEAD; then
+            echo "Déjà à jour avec l'amont."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git merge --no-edit --no-commit upstream/main || true
+          # Fichiers générés, README et compteur : les nôtres, recalculés plus bas.
+          for f in presidentielle2027.csv presidentielle2027.json README.md .last_poll_count; do
+            git checkout --ours -- "$f" 2>/dev/null && git add -- "$f" || true
+          done
+          if [ -n "$(git diff --name-only --diff-filter=U)" ]; then
+            echo "::error::Conflits non résolus : $(git diff --name-only --diff-filter=U | tr '\n' ' ')"
+            git merge --abort
+            exit 1
+          fi
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Régénérer et pousser
+        if: steps.merge.outputs.changed == 'true'
+        run: |
+          python compute_confidence_intervals.py
+          python merge.py
+          python csv_to_json.py
+          python update_badge.py
+          python update_top_hypotheses.py
+          git add -A polls polls.csv hypotheses.csv candidats.csv presidentielle2027.csv presidentielle2027.json README.md
+          git commit -m "🔄 Reprise de MieuxVoter/presidentielle2027 [skip ci]"
+          git push
+
+      - name: Signaler un échec
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create --repo "$GITHUB_REPOSITORY" \
+            --title "⚠️ Synchronisation avec Mieux Voter en échec" \
+            --body "La fusion de MieuxVoter/presidentielle2027 a échoué : ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"

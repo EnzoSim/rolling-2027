@@ -1,0 +1,34 @@
+name: Retry mining
+
+# rolling-2027 : relance seule le dépouillement des notices restées sans tri (pas de
+# clé configurée au moment de l'issue, quota épuisé, notice illisible). Toutes les
+# heures, au plus cinq issues par passage, la plus ancienne d'abord.
+on:
+  schedule:
+    - cron: '47 * * * *'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  issues: read
+
+jobs:
+  retry:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Relancer les notices sans verdict
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HAS_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' || secrets.XAI_API_KEY != '' || secrets.OPENROUTER_API_KEY != '' || secrets.MISTRAL_API_KEY != '' || secrets.GEMINI_API_KEY != '' }}
+        run: |
+          if [ "$HAS_KEY" != "true" ]; then
+            echo "::warning::Aucune clé LLM configurée : rien à relancer."
+            exit 0
+          fi
+          issues=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --label new-poll --limit 50 \
+            --json number,labels \
+            --jq '[.[] | select([.labels[].name] | (index("avec-intentions-de-vote") or index("sans-intentions-de-vote")) | not)] | sort_by(.number) | .[:5] | .[].number')
+          for n in $issues; do
+            echo "Relance du dépouillement de l'issue #$n"
+            gh workflow run llm-mining.yml --repo "$GITHUB_REPOSITORY" -f issue="$n" -f mode=mining-pr
+          done
