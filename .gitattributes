@@ -1,0 +1,7 @@
+# rolling-2027 : la synchronisation avec MieuxVoter/presidentielle2027 garde les
+# lignes ajoutées des deux côtés au lieu de les mettre en conflit. Un même sondage
+# ajouté deux fois avec des valeurs différentes fait échouer merge.py : la fusion
+# s'arrête alors et ouvre une issue (sync-upstream.yml).
+polls.csv merge=union
+hypotheses.csv merge=union
+candidats.csv merge=union

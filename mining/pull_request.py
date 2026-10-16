@@ -23,6 +23,7 @@ class PullRequest:
     url: str
     branch: str
     labels_warning: str = ""
+    merged: bool = False
 
 
 def branch_name(issue):
@@ -184,10 +185,12 @@ def _available_labels(repo, root):
         return set()
 
 
-def _apply_labels(repo, number, root):
+def _apply_labels(repo, number, root, review=True):
     available = _available_labels(repo, root)
     wanted = [label for label in ("automated", "needs-human-review") if label in available]
-    if "needs-human-review" not in available and "need-screening !" in available:
+    if not review:
+        wanted = [label for label in wanted if label == "automated"]
+    elif "needs-human-review" not in available and "need-screening !" in available:
         wanted.append("need-screening !")
     if wanted:
         _run(
@@ -195,14 +198,32 @@ def _apply_labels(repo, number, root):
             root,
         )
     missing = {"automated", "needs-human-review"} - available
+    if not review:
+        missing.discard("needs-human-review")
     if "needs-human-review" in missing and "need-screening !" in available:
         missing.remove("needs-human-review")
     return "" if not missing else "Labels absents : " + ", ".join(sorted(missing))
 
 
-def create_or_update(issue, repo, proposal, root, models=(), calls=0):
-    """Valide, commit, pousse et crée ou met à jour la PR brouillon de l'issue."""
+def can_automerge(proposal):
+    """rolling-2027 : seul un dépouillement complet et sans alerte se fusionne seul.
+
+    Chaque chiffre a déjà été retrouvé sur sa ligne de la notice (extraction.py), et
+    `_validate` vient de faire passer pytest et merge.py. Une page non dépouillée ou
+    une alerte de l'extraction laissent la PR en brouillon, pour une relecture humaine.
+    """
+    return not proposal.missing and not getattr(proposal, "failures", None)
+
+
+def create_or_update(issue, repo, proposal, root, models=(), calls=0, automerge=False):
+    """Valide, commit, pousse et crée ou met à jour la PR de l'issue.
+
+    Brouillon par défaut ; avec `automerge` et une proposition complète
+    (`can_automerge`), la PR est ouverte prête, fusionnée, puis post-merge.yml est
+    relancé (une fusion faite avec GITHUB_TOKEN ne déclenche aucun workflow).
+    """
     root = Path(root)
+    ready = automerge and can_automerge(proposal)
     branch = branch_name(issue)
     _validate(root)
     paths = ["candidats.csv", "hypotheses.csv", "polls.csv", *(f"polls/{poll_id}.csv" for poll_id in proposal.polls)]
@@ -221,6 +242,8 @@ def create_or_update(issue, repo, proposal, root, models=(), calls=0):
     if existing:
         number, url = existing["number"], existing["url"]
         _run(["gh", "pr", "edit", str(number), "--repo", repo, "--title", title, "--body", content], root)
+        if ready:
+            _run(["gh", "pr", "ready", str(number), "--repo", repo], root, allow_failure=True)
     else:
         created = _run(
             [
@@ -233,7 +256,7 @@ def create_or_update(issue, repo, proposal, root, models=(), calls=0):
                 "main",
                 "--head",
                 branch,
-                "--draft",
+                *([] if ready else ["--draft"]),
                 "--title",
                 title,
                 "--body",
@@ -246,5 +269,9 @@ def create_or_update(issue, repo, proposal, root, models=(), calls=0):
         if not view:
             raise PullRequestError("la PR a été créée mais GitHub ne permet pas de la relire")
         number, url = view["number"], view["url"] or url
-    warning = _apply_labels(repo, number, root)
-    return PullRequest(number, url, branch, warning)
+    warning = _apply_labels(repo, number, root, review=not ready)
+    if not ready:
+        return PullRequest(number, url, branch, warning)
+    _run(["gh", "pr", "merge", str(number), "--repo", repo, "--squash", "--delete-branch"], root)
+    _run(["gh", "workflow", "run", "post-merge.yml", "--repo", repo, "--ref", "main"], root)
+    return PullRequest(number, url, branch, warning, merged=True)

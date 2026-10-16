@@ -1,5 +1,24 @@
-# presidentielle2027
+# rolling-2027
 ![Sondages agrégés](https://img.shields.io/badge/sondages_agrégés-300-blue)
+
+**rolling-2027** : les sondages de la présidentielle 2027, publiés dans l'heure.
+
+Fork de [MieuxVoter/presidentielle2027](https://github.com/MieuxVoter/presidentielle2027) (licence MIT), dont il garde le format, les données et la méthode : chaque ligne reste traçable jusqu'à la notice publiée par la Commission des sondages. Merci à Mieux Voter et à ses contributeurs.
+
+Ce qui change :
+
+| | Mieux Voter | rolling-2027 |
+|---|---|---|
+| Guet du registre de la Commission | une fois par jour (9 h UTC) | toutes les heures |
+| Lecture des notices par un modèle | modèles gratuits, quotas vite épuisés | Claude Opus 5.5, puis Grok (xAI), puis les modèles gratuits |
+| Publication | PR en brouillon, relue à la main | fusion automatique si chaque chiffre est retrouvé sur sa ligne de la notice et que les tests passent ; brouillon sinon |
+| Données de l'amont | — | reprises toutes les six heures |
+
+Secrets du dépôt (*Settings → Secrets and variables → Actions*) : `ANTHROPIC_API_KEY` et/ou `XAI_API_KEY` (les clés `OPENROUTER_API_KEY`, `MISTRAL_API_KEY`, `GEMINI_API_KEY` restent en secours). Variables facultatives : `LLM_PROVIDERS` (ordre des fournisseurs, par exemple `xai,anthropic`), `XAI_MODELS`, `ANTHROPIC_MODELS`, `ROLLING_AUTOMERGE` (`0` pour relire chaque PR).
+
+Flux JSON : `https://raw.githubusercontent.com/EnzoSim/rolling-2027/refs/heads/main/presidentielle2027.json`
+
+---
 
 Compilation des sondages d'intention de vote à l'occasion des élections présidentielles 2027 en France.
 

@@ -8,7 +8,8 @@ La cascade sert aux quotas gratuits : dès qu'un fournisseur refuse (429, panne,
 réponse illisible), on passe au suivant. OpenRouter fait en plus sa propre
 bascule entre modèles gratuits via le paramètre `models`.
 
-Stdlib uniquement.
+Stdlib uniquement pour les fournisseurs au format OpenAI ; Claude passe par le
+SDK officiel `anthropic` (requirements_mining.txt), importé seulement s'il sert.
 """
 
 import json
@@ -24,16 +25,29 @@ OPENROUTER_MAX_MODELS = 3
 # Les catalogues gratuits rendent parfois une réponse vide, sans contenu ni
 # raisonnement (constaté sous l'issue #194, non reproductible à la demande).
 ATTEMPTS = 3
+# Claude : la réflexion, toujours active sur Opus 5.5, consomme max_tokens.
+THINKING_HEADROOM = 8000
+# Au-dessous de ce budget, une question courte (le tri) : effort bas.
+SHORT_ANSWER_TOKENS = 4000
 
 # Les catalogues gratuits changent souvent — les identifiants ci-dessous ont été
 # relevés le 2026-09-13 et se périment. Ils sont surchargeables par variable
 # d'environnement, et docs/LLM_MINING.md explique comment lister ceux du jour.
 DEFAULTS = (
+    # rolling-2027 : Claude passe en premier. Un fournisseur payant ne s'épuise pas
+    # au milieu d'une notice IFOP de 13 hypothèses, là où les quotas gratuits
+    # laissaient des issues sans PR (#264, Odoxa du 14 octobre 2026).
+    ("anthropic", "https://api.anthropic.com", "ANTHROPIC_API_KEY", "ANTHROPIC_MODELS"),
+    # xAI (Grok) parle le format OpenAI : il passe par le même `_post` que les autres.
+    ("xai", "https://api.x.ai/v1", "XAI_API_KEY", "XAI_MODELS"),
     ("openrouter", "https://openrouter.ai/api/v1", "OPENROUTER_API_KEY", "OPENROUTER_MODELS"),
     ("mistral", "https://api.mistral.ai/v1", "MISTRAL_API_KEY", "MISTRAL_MODELS"),
     ("gemini", "https://generativelanguage.googleapis.com/v1beta/openai", "GEMINI_API_KEY", "GEMINI_MODELS"),
 )
 FALLBACK_MODELS = {
+    "anthropic": "claude-opus-5-5",
+    # Relevé le 2026-10-16 ; surchargeable par XAI_MODELS (seul le premier sert).
+    "xai": "grok-4.6",
     # Trois modèles généralistes de fournisseurs différents : la cascade ne sert
     # à rien si les trois partagent le même quota. Les modèles spécialisés
     # (code, finance, santé, sûreté) sont volontairement écartés.
@@ -118,6 +132,8 @@ class Client:
         raise error("aucun fournisseur n'a répondu — " + " | ".join(errors))
 
     def _call(self, provider, system, prompt, max_tokens):
+        if provider.name == "anthropic":
+            return self._call_anthropic(provider, system, prompt, max_tokens)
         payload = {
             "model": provider.models[0],
             "messages": [{"role": "system", "content": system}, {"role": "user", "content": prompt}],
@@ -167,6 +183,52 @@ class Client:
                 continue
             return Answer(text.strip(), provider.name, body.get("model") or provider.models[0], truncated)
         raise LLMError(last)
+
+    def _call_anthropic(self, provider, system, prompt, max_tokens):
+        """Claude, par le SDK officiel (l'API Anthropic n'est pas appelée en format OpenAI).
+
+        Claude Opus 5.5 réfléchit toujours et refuse `temperature` : on ne l'envoie pas,
+        et la réflexion se décompte de `max_tokens`, d'où la marge ajoutée au budget de
+        l'appelant. L'effort reste bas pour les questions courtes (le tri d'une notice),
+        moyen pour relever un tableau. Le repli côté serveur (`fallbacks: "default"`)
+        reprend la requête sur un autre modèle si un filtre de sécurité la refuse.
+        """
+        try:
+            import anthropic
+        except ImportError as exc:
+            raise LLMError("paquet anthropic absent : pip install -r requirements_mining.txt") from exc
+        sdk = anthropic.Anthropic(
+            api_key=provider.api_key,
+            base_url=provider.base_url,
+            timeout=TIMEOUT,
+            max_retries=ATTEMPTS - 1,
+        )
+        try:
+            response = sdk.beta.messages.create(
+                model=provider.models[0],
+                max_tokens=max_tokens + THINKING_HEADROOM,
+                system=system,
+                messages=[{"role": "user", "content": prompt}],
+                output_config={"effort": "low" if max_tokens <= SHORT_ANSWER_TOKENS else "medium"},
+                betas=["server-side-fallback-2026-07-01"],
+                fallbacks="default",
+            )
+        except anthropic.RateLimitError as exc:
+            raise LLMError(f"quota Anthropic : HTTP {exc.status_code}") from exc
+        except anthropic.APIStatusError as exc:
+            raise LLMError(f"HTTP {exc.status_code}") from exc
+        except anthropic.APIConnectionError as exc:
+            raise LLMError(f"connexion Anthropic : {exc}") from exc
+        self.calls += 1
+        usage = response.usage
+        self.tokens += (getattr(usage, "input_tokens", 0) or 0) + (getattr(usage, "output_tokens", 0) or 0)
+        if response.stop_reason == "refusal":
+            raise LLMError(f"refus du modèle ({getattr(response.stop_details, 'category', None)})")
+        text = "".join(block.text for block in response.content if block.type == "text").strip()
+        truncated = response.stop_reason == "max_tokens"
+        if not text and not truncated:
+            raise LLMError(f"réponse vide (modèle {response.model}, stop_reason {response.stop_reason})")
+        return Answer(text, provider.name, response.model or provider.models[0], truncated)
 
     def _post(self, provider, payload):
         request = Request(

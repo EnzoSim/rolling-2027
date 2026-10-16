@@ -27,6 +27,8 @@ permissions:
   issues: write
   contents: write
   pull-requests: write
+  # rolling-2027 : relancer post-merge.yml après une fusion automatique.
+  actions: write
 
 concurrency:
   group: llm-mining-${{ github.event.issue.number || inputs.issue }}
@@ -93,11 +95,13 @@ jobs:
         id: guard
         if: steps.command.outputs.skip != 'true'
         env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          if [ -z "$OPENROUTER_API_KEY$MISTRAL_API_KEY$GEMINI_API_KEY" ]; then
+          if [ -z "$ANTHROPIC_API_KEY$XAI_API_KEY$OPENROUTER_API_KEY$MISTRAL_API_KEY$GEMINI_API_KEY" ]; then
             echo "::warning::Aucune clé LLM configurée, mining ignoré."
             echo "skip=true" >> "$GITHUB_OUTPUT"
           fi
@@ -112,6 +116,15 @@ jobs:
           FORCE: ${{ github.event_name != 'issues' }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
+          # Ordre et modèles réglables sans toucher au code (Settings → Variables).
+          LLM_PROVIDERS: ${{ vars.LLM_PROVIDERS }}
+          XAI_MODELS: ${{ vars.XAI_MODELS }}
+          ANTHROPIC_MODELS: ${{ vars.ANTHROPIC_MODELS }}
+          # rolling-2027 : un dépouillement complet et sans alerte se fusionne seul ;
+          # « 0 » dans la variable ROLLING_AUTOMERGE remet la relecture humaine.
+          ROLLING_AUTOMERGE: ${{ vars.ROLLING_AUTOMERGE || '1' }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}

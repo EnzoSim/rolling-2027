@@ -3,3 +3,5 @@
 # ne l'a pas fait rétroactivement, donc la plupart des notices doivent encore être
 # extraites ici, avec la même commande pdfplumber que l'amont.
 pdfplumber==0.11.9
+# rolling-2027 : Claude, premier fournisseur du dépouillement (mining/client.py).
+anthropic==1.15.0

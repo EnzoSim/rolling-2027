@@ -30,6 +30,11 @@ RAW_BASE = f"https://raw.githubusercontent.com/{CATALOG_REPO}/main/"
 
 ROOT = Path(__file__).resolve().parent
 LAST_COUNT_FILE = ROOT / ".last_poll_count"
+# rolling-2027 : « Prim » aussi. Le catalogue range dans « Prim » toute notice dont le
+# titre parle de primaire, même quand elle contient des intentions de vote pour la
+# présidentielle (10314, IFOP pour LCI du 14 octobre 2026). Le tri par le modèle
+# écarte ensuite celles qui n'en ont pas.
+CATEGORIES = frozenset({"Pres", "Prim"})
 # Corps des issues, éditable sans toucher au code.
 TEMPLATE_FILE = ROOT / "docs" / "issue_template_nouveau_sondage.md"
 
@@ -69,7 +74,7 @@ def get_catalog_polls():
         return []
 
     reader = csv.DictReader(content.splitlines())
-    return [row for row in reader if (row.get("categorie") or "").strip() == "Pres"]
+    return [row for row in reader if (row.get("categorie") or "").strip() in CATEGORIES]
 
 
 def url_exists(url):
