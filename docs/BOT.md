@@ -64,11 +64,13 @@ FIN
   - les dates sont au format AAAA-MM-JJ, les effectifs en chiffres sans espace ;
   - `INSCRITS` reste vide s'il n'est pas indiqué ;
   - chaque `SOURCE_…` est recopié mot pour mot de la notice, sans retoucher les espaces ni les apostrophes.
+  - `SOURCE_DATES` vient de la notice, même quand les tableaux viennent d'un `RAPPORT:` ; une seule plage sur deux mois (« Du 24 septembre au 7 octobre 2026 ») justifie `DEBUT` et `FIN`.
 - **Les pages.** Un bloc `PAGE n` par page qui porte un tableau, `n` étant le numéro de la ligne `--- page n ---` du texte de la notice.
 - **Les tableaux.**
   - un bloc `TABLEAU` … `FIN` par tableau, dans l'ordre de la page ;
   - `TOUR: 1er Tour` ou `TOUR: 2nd Tour` ;
   - `EFFECTIFS` reprend les bases écrites sur la page (« exprimé une intention de vote = … | certains d'aller voter = … »), jamais celles de la note sur les marges. Les inscrits n'y vont pas : ils sont dans `INSCRITS` (une base « inscrits » y est ignorée).
+    Avec un `RAPPORT:`, une base absente de la page du tableau peut se lire sur la page de méthodologie du rapport, celle qui porte les dates du terrain (Odoxa : « 7 599 (hypothèse Philippe) à 7 374 (hypothèse Attal) individus au 1er tour »).
 - **Une ligne par candidat :** `nom | valeur | ligne source`.
   - Le nom s'écrit comme dans `candidats.csv`.
   - La valeur a un point décimal (`2.5`) ; « <1 % » s'écrit `0.5`.
