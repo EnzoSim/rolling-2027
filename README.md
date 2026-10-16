@@ -1,5 +1,5 @@
 # rolling-2027
-![Sondages agrégés](https://img.shields.io/badge/sondages_agrégés-304-blue)
+![Sondages agrégés](https://img.shields.io/badge/sondages_agrégés-308-blue)
 
 **rolling-2027** : les sondages de la présidentielle 2027, publiés dans l'heure.
 
