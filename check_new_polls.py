@@ -177,7 +177,9 @@ def _github_request(url, token, method="GET", payload=None):
         },
     )
     with urlopen(request, timeout=TIMEOUT) as response:
-        return json.loads(response.read().decode("utf-8"))
+        raw = response.read().decode("utf-8")
+    # Un déclenchement de workflow répond 204, sans corps.
+    return json.loads(raw) if raw.strip() else None
 
 
 def get_existing_issues(repo, token):
@@ -210,9 +212,15 @@ def create_issue(poll_data, repo, token, template=None):
     return _github_request(f"https://api.github.com/repos/{repo}/issues", token, "POST", payload)
 
 
+# rolling-2027 : une issue créée ici demande tout de suite la PR (« mining-pr », qui trie
+# d'abord). En « triage », l'issue recevait son label sans jamais de PR, et Retry mining
+# ne relance que les issues sans label : le sondage n'était jamais publié.
+DISPATCH_MODE = "mining-pr"
+
+
 def trigger_llm_triage(repo, token, issue_number, ref):
-    """Dispatch llm-mining.yml in triage mode for a newly created issue"""
-    payload = {"ref": ref, "inputs": {"issue": str(issue_number), "mode": "triage"}}
+    """Dispatch llm-mining.yml (DISPATCH_MODE) for a newly created issue"""
+    payload = {"ref": ref, "inputs": {"issue": str(issue_number), "mode": DISPATCH_MODE}}
     _github_request(
         f"https://api.github.com/repos/{repo}/actions/workflows/llm-mining.yml/dispatches",
         token,
@@ -241,7 +249,7 @@ def find_new_polls(limit):
     print(f"✨ Detected {new_poll_count} new poll(s)")
     new_polls = catalog_polls[-new_poll_count:]
     if len(new_polls) > limit:
-        print(f"⚠️  Limiting to the {limit} most recent poll(s)")
+        print(f"⚠️  Limiting to the {limit} oldest new poll(s), the others come at the next run")
 
     return catalog_polls, new_polls
 
@@ -285,32 +293,43 @@ def run_create_issues(repo, token, limit):
     existing_issue_filenames = get_existing_issues(repo, token)
     print(f"🎫 Found {len(existing_issue_filenames)} open issue(s) already")
 
+    # rolling-2027 : on traite les plus anciennes, dans l'ordre du catalogue, et le compteur
+    # n'avance que sur les notices traitées. Avant, il sautait à la fin du catalogue même
+    # quand la limite laissait des notices de côté : celles-là n'avaient jamais d'issue
+    # (10315 à 10320, le 16 octobre 2026, dont l'OpinionWay pour CNews).
+    handled = new_polls[:limit]
     polls_to_create = [
         poll
-        for poll in new_polls
+        for poll in handled
         if (filename := (poll.get("filename") or "").strip()) and filename not in existing_issue_filenames
     ]
-    print(f"📝 Will create {len(polls_to_create[:limit])} new issue(s)")
+    print(f"📝 Will create {len(polls_to_create)} new issue(s)")
 
     template = load_template()
     ref = os.environ.get("GITHUB_REF_NAME", "main")
     created_count = 0
-    for poll in polls_to_create[:limit]:
+    done = 0  # notices de `handled`, dans l'ordre, qui ont leur issue (ou n'en demandent pas)
+    for poll in handled:
+        filename = (poll.get("filename") or "").strip()
+        if not filename or filename in existing_issue_filenames:
+            done += 1
+            continue
         try:
             issue = create_issue(poll, repo, token, template)
             print(f"✅ Created issue #{issue['number']}: {issue['title']}")
             created_count += 1
-        except Exception as e:  # noqa: BLE001 - on veut continuer sur les autres sondages
-            print(f"❌ Failed to create issue for {poll.get('filename')}: {e}")
-            continue
+            done += 1
+        except Exception as e:  # noqa: BLE001 - on s'arrête : le compteur reste avant elle
+            print(f"❌ Failed to create issue for {poll.get('filename')}: {e} (retried at the next run)")
+            break
         try:
             trigger_llm_triage(repo, token, issue["number"], ref)
-            print(f"🤖 Triggered triage workflow for issue #{issue['number']}")
+            print(f"🤖 Triggered {DISPATCH_MODE} workflow for issue #{issue['number']}")
         except Exception as e:  # noqa: BLE001 - l'issue existe déjà, on ne revient pas en arrière
-            print(f"⚠️  Issue #{issue['number']} créée, mais triage non déclenché: {e}")
+            print(f"⚠️  Issue #{issue['number']} créée, mais dépouillement non déclenché: {e}")
 
-    if created_count > 0:
-        save_poll_count(len(catalog_polls))
+    if done:
+        save_poll_count(len(catalog_polls) - len(new_polls) + done)
 
     print(f"\n📊 Summary:")
     print(f"  - Current count: {len(catalog_polls)}")

@@ -18,7 +18,7 @@ def test_trigger_llm_triage_declenche_le_workflow_avec_issue_et_mode(monkeypatch
         "url": "https://api.github.com/repos/MieuxVoter/presidentielle2027/actions/workflows/llm-mining.yml/dispatches",
         "token": "token-test",
         "method": "POST",
-        "payload": {"ref": "main", "inputs": {"issue": "211", "mode": "triage"}},
+        "payload": {"ref": "main", "inputs": {"issue": "211", "mode": "mining-pr"}},
     }
 
 
@@ -75,3 +75,59 @@ def test_rolling_2027_garde_les_notices_rangees_en_primaire(monkeypatch):
     monkeypatch.setattr(cnp, "urlopen", lambda url, timeout=None: _Reponse(catalog))
     names = [row["filename"] for row in cnp.get_catalog_polls()]
     assert names == ["10313-pres-blocus.pdf", "10314-pres-climat-post-primaire-ifop-lci.pdf"]
+
+
+def _issues_setup(monkeypatch, catalog, new_polls, fail_on=()):
+    monkeypatch.setattr(check_new_polls, "find_new_polls", lambda _limit: (catalog, new_polls))
+    monkeypatch.setattr(check_new_polls, "get_existing_issues", lambda _repo, _token: set())
+    monkeypatch.setattr(check_new_polls, "load_template", lambda: object())
+    numbers = iter(range(200, 300))
+    created = []
+
+    def fake_create(poll, _repo, _token, _template):
+        if poll["filename"] in fail_on:
+            raise RuntimeError("API indisponible")
+        created.append(poll["filename"])
+        return {"number": next(numbers), "title": poll["filename"]}
+
+    monkeypatch.setattr(check_new_polls, "create_issue", fake_create)
+    monkeypatch.setattr(check_new_polls, "trigger_llm_triage", lambda *_args: None)
+    saved = []
+    monkeypatch.setattr(check_new_polls, "save_poll_count", lambda count: saved.append(count))
+    return created, saved
+
+
+def test_la_limite_garde_le_reste_pour_le_passage_suivant(monkeypatch):
+    """rolling-2027 : au-delà de la limite, le compteur n'avance que sur les notices traitées."""
+    catalog = [{"filename": f"{n}.pdf"} for n in range(1, 8)]
+    created, saved = _issues_setup(monkeypatch, catalog, catalog[2:])
+
+    assert check_new_polls.run_create_issues("EnzoSim/rolling-2027", "token-test", 3) == 0
+    assert created == ["3.pdf", "4.pdf", "5.pdf"]
+    assert saved == [5]
+
+
+def test_un_echec_arrete_le_compteur_avant_la_notice(monkeypatch):
+    catalog = [{"filename": f"{n}.pdf"} for n in range(1, 6)]
+    created, saved = _issues_setup(monkeypatch, catalog, catalog[1:], fail_on={"3.pdf"})
+
+    assert check_new_polls.run_create_issues("EnzoSim/rolling-2027", "token-test", 10) == 0
+    assert created == ["2.pdf"]
+    assert saved == [2]
+
+
+def test_un_declenchement_sans_corps_ne_leve_pas(monkeypatch):
+    """Un dispatch de workflow répond 204 sans corps : ce n'est pas une erreur."""
+
+    class _Vide:
+        def read(self):
+            return b""
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+    monkeypatch.setattr(check_new_polls, "urlopen", lambda request, timeout=None: _Vide())
+    assert check_new_polls._github_request("https://api.github.com/x", "token-test", "POST", {}) is None
