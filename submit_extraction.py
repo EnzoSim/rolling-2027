@@ -26,7 +26,7 @@ from urllib.parse import urlparse
 
 from check_new_polls import _github_request
 from mine_poll import NoticeUnavailable, issue_poll_filename, notice_date, notice_text_for
-from mining import csvio, extraction, notice, pull_request
+from mining import csvio, extraction, notice, pull_request, render
 from mining.proposal import ProposalError, build as build_proposal
 
 ROOT = Path(__file__).resolve().parent
@@ -197,6 +197,17 @@ def comment(repo, issue, token, body):
     _github_request(f"https://api.github.com/repos/{repo}/issues/{issue}/comments", token, "POST", {"body": body})
 
 
+def close_published(repo, issue, token):
+    """Une notice publiée : le label « avec intentions de vote », puis l'issue fermée.
+
+    « Closes #n » dans la PR ne ferme rien quand la fusion est faite avec GITHUB_TOKEN (cas
+    réel : l'issue #17) ; sans le label, le bot reprendrait l'issue à son passage suivant.
+    """
+    base = f"https://api.github.com/repos/{repo}/issues/{issue}"
+    _github_request(f"{base}/labels", token, "POST", {"labels": [render.LABELS["oui"]]})
+    _github_request(base, token, "PATCH", {"state": "closed", "state_reason": "completed"})
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--issue", type=int, required=True, help="issue « Nouveau sondage » de la notice")
@@ -258,6 +269,8 @@ def main(argv=None):
     print(message)
     if args.post:
         comment(repo, args.issue, token, message)
+        if created.merged:
+            close_published(repo, args.issue, token)
     return 0
 
 
