@@ -226,7 +226,9 @@ def create_or_update(issue, repo, proposal, root, models=(), calls=0, automerge=
     ready = automerge and can_automerge(proposal)
     branch = branch_name(issue)
     _validate(root)
-    paths = ["candidats.csv", "hypotheses.csv", "polls.csv", *(f"polls/{poll_id}.csv" for poll_id in proposal.polls)]
+    # proposal.polls porte les lignes de polls.csv (des dictionnaires) ; les fichiers de
+    # résultats sont nommés d'après leur poll_id, les clés de proposal.results.
+    paths = ["candidats.csv", "hypotheses.csv", "polls.csv", *(f"polls/{poll_id}.csv" for poll_id in proposal.results)]
     _run(["git", "add", "--", *paths], root)
     staged = _run(["git", "diff", "--cached", "--quiet"], root, allow_failure=True)
     if staged.returncode == 0:

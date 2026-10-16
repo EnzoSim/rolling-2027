@@ -232,17 +232,25 @@ def main(argv=None):
     if not args.pr:
         return 0
 
-    pull_request.prepare_branch(args.issue, ROOT)
-    csvio.apply(proposal, ROOT)
-    created = pull_request.create_or_update(
-        args.issue,
-        repo,
-        proposal,
-        ROOT,
-        models=[f"dépouillement manuel{' (rapport : ' + report + ')' if report else ''}"],
-        calls=0,
-        automerge=os.environ.get("ROLLING_AUTOMERGE") == "1",
-    )
+    try:
+        pull_request.prepare_branch(args.issue, ROOT)
+        csvio.apply(proposal, ROOT)
+        created = pull_request.create_or_update(
+            args.issue,
+            repo,
+            proposal,
+            ROOT,
+            models=[f"dépouillement manuel{' (rapport : ' + report + ')' if report else ''}"],
+            calls=0,
+            automerge=os.environ.get("ROLLING_AUTOMERGE") == "1",
+        )
+    except (pull_request.PullRequestError, ProposalError) as exc:
+        # Le dépouillement était juste : la panne est de notre côté, le bot ne doit rien changer.
+        message = f"⚠️ Dépouillement vérifié ({summary}), mais la publication a échoué : {exc}"
+        print(message)
+        if args.post:
+            comment(repo, args.issue, token, message + "\n\nRien à corriger côté bot : on relance de notre côté.")
+        return 1
     state = "fusionnée" if created.merged else "ouverte, à relire"
     message = (
         f"✅ {len(proposal.polls)} tableau(x) vérifié(s) : {summary}. PR [#{created.number}]({created.url}) {state}."

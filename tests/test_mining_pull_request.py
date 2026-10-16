@@ -191,3 +191,14 @@ def test_une_alerte_d_extraction_bloque_la_fusion(monkeypatch, tmp_path):
     monkeypatch.setattr(pull_request, "_validate", lambda root: None)
     result = pull_request.create_or_update(42, "EnzoSim/rolling-2027", _proposal(), tmp_path, automerge=True)
     assert not result.merged and not any(c[:3] == ["gh", "pr", "merge"] for c in commands)
+
+
+def test_git_add_recoit_les_fichiers_de_resultats_par_poll_id(monkeypatch, tmp_path):
+    """Cas réel, issue #17 : le chemin était construit avec la ligne entière de polls.csv."""
+    commands = []
+    monkeypatch.setattr(pull_request, "_run", _faux_gh(commands))
+    monkeypatch.setattr(pull_request, "_validate", lambda root: None)
+    pull_request.create_or_update(42, "EnzoSim/rolling-2027", _proposal(), tmp_path)
+    add = next(c for c in commands if c[:2] == ["git", "add"])
+    assert "polls/20260909_0910_ow_A.csv" in add
+    assert not any("{" in part for part in add)
