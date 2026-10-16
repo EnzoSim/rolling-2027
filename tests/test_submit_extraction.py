@@ -101,3 +101,72 @@ def test_la_base_des_inscrits_dans_effectifs_est_ignoree():
     )
     proposal, _ = se.verify(METHODOLOGY + avec, "essai-bot.pdf", NOTICE)
     assert proposal.polls[0]["sous_echantillon1"] == 1390
+
+
+ISSUE_URL = "https://api.github.com/repos/EnzoSim/rolling-2027/issues/17"
+
+
+def _publier(monkeypatch, tmp_path, post, created=None, failure=None):
+    """main() avec --pr, la PR simulée (ouverte, fusionnée ou en panne) ; rend les appels à l'API."""
+    calls = []
+    monkeypatch.setattr(
+        se, "_github_request", lambda url, token, method="GET", payload=None: calls.append((url, method, payload))
+    )
+    monkeypatch.setattr(se, "issue_poll_filename", lambda *args: "essai-bot.pdf")
+    monkeypatch.setattr(se.pull_request, "prepare_branch", lambda *args: None)
+    monkeypatch.setattr(se.csvio, "apply", lambda *args: None)
+
+    def create_or_update(*args, **kwargs):
+        if failure:
+            raise failure
+        return created
+
+    monkeypatch.setattr(se.pull_request, "create_or_update", create_or_update)
+    monkeypatch.setenv("GITHUB_REPOSITORY", "EnzoSim/rolling-2027")
+    depouillement = tmp_path / "extraction.txt"
+    depouillement.write_text(METHODOLOGY + PAGE_9, encoding="utf-8")
+    notice_txt = tmp_path / "notice.txt"
+    notice_txt.write_text(NOTICE, encoding="utf-8")
+    argv = ["--issue", "17", "--input", str(depouillement), "--notice-txt", str(notice_txt), "--pr"]
+    code = se.main(argv + (["--post"] if post else []))
+    return code, calls
+
+
+def _pr(merged):
+    return se.pull_request.PullRequest(
+        22, "https://github.com/EnzoSim/rolling-2027/pull/22", "mining/issue-17", merged=merged
+    )
+
+
+def test_une_notice_publiee_ferme_son_issue(monkeypatch, tmp_path):
+    """Cas réel, issue #17 : « Closes #17 » n'a rien fermé, la fusion étant faite avec GITHUB_TOKEN."""
+    code, calls = _publier(monkeypatch, tmp_path, post=True, created=_pr(merged=True))
+    assert code == 0
+    assert [(url, method) for url, method, _ in calls] == [
+        (f"{ISSUE_URL}/comments", "POST"),
+        (f"{ISSUE_URL}/labels", "POST"),
+        (ISSUE_URL, "PATCH"),
+    ]
+    assert "fusionnée" in calls[0][2]["body"]
+    assert calls[1][2] == {"labels": ["avec-intentions-de-vote"]}
+    assert calls[2][2] == {"state": "closed", "state_reason": "completed"}
+
+
+def test_une_pr_a_relire_laisse_l_issue_ouverte(monkeypatch, tmp_path):
+    code, calls = _publier(monkeypatch, tmp_path, post=True, created=_pr(merged=False))
+    assert code == 0
+    assert [(url, method) for url, method, _ in calls] == [(f"{ISSUE_URL}/comments", "POST")]
+    assert "ouverte, à relire" in calls[0][2]["body"]
+
+
+def test_sans_post_rien_n_est_ecrit_sous_l_issue(monkeypatch, tmp_path):
+    code, calls = _publier(monkeypatch, tmp_path, post=False, created=_pr(merged=True))
+    assert code == 0 and calls == []
+
+
+def test_une_publication_en_panne_laisse_l_issue_ouverte(monkeypatch, tmp_path):
+    panne = se.pull_request.PullRequestError("git add a échoué")
+    code, calls = _publier(monkeypatch, tmp_path, post=True, failure=panne)
+    assert code == 1
+    assert [(url, method) for url, method, _ in calls] == [(f"{ISSUE_URL}/comments", "POST")]
+    assert "la publication a échoué" in calls[0][2]["body"]

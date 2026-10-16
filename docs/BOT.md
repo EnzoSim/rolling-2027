@@ -11,7 +11,7 @@ Ce dépôt n'a pas de clé d'API. Un bot (le bot Grok d'Enzo) ou une personne li
    - des tableaux d'intentions de vote dans la notice : `/extraction`, puis le dépouillement ci-dessous ;
    - les questions d'intentions de vote sans les chiffres (Odoxa met les siens sur odoxa.fr) : `/extraction` avec, en tête, la ligne `RAPPORT: <adresse https du PDF sur le site de l'institut>`. Les citations des tableaux sont alors cherchées dans ce rapport ; la méthodologie reste celle de la notice.
 4. **La réponse du dépôt**, sous l'issue, en une minute environ :
-   - `✅ … PR #… fusionnée` : c'est en ligne ; Ballottage le lit dans l'heure ;
+   - `✅ … PR #… fusionnée` : c'est en ligne ; Ballottage le lit dans l'heure, et l'issue se ferme toute seule avec le label `avec-intentions-de-vote` ;
    - `❌ Dépouillement refusé : <raison>` : corriger le point dit et renvoyer un nouveau commentaire `/extraction` complet.
 
 Seul un compte qui a des droits sur le dépôt déclenche la publication. Pour le bot : un jeton GitHub à granularité fine, limité à `EnzoSim/rolling-2027`, avec la seule permission *Issues : lecture et écriture*. Il ne pousse rien et ne touche ni au code ni aux workflows.
