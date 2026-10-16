@@ -199,6 +199,16 @@ def _source_has_date(source, value):
         pattern = rf"(?<!\d)0?{date.day}(?:er)?(?:\s+(?:au|a|à|et|-)\s+\d+(?:er)?)?\s+{name}\s+{date.year}(?!\d)"
         if re.search(pattern, compact):
             return True
+        # « du 24 septembre au 7 octobre 2026 » : le premier jour d'une plage sur deux mois
+        # n'a pas d'année à lui, il prend celle du second mois (l'année suivante quand la
+        # plage passe de décembre à janvier) (#8 : Odoxa, notice 10310).
+        for other, later in FRENCH_MONTHS.items():
+            if later == month:
+                continue
+            year = date.year if later > month else date.year + 1
+            spanning = rf"(?<!\d)0?{date.day}(?:er)?\s+{name}\s+(?:au|a|à|et|-)\s+\d+(?:er)?\s+{other}\s+{year}(?!\d)"
+            if re.search(spanning, compact):
+                return True
     return False
 
 

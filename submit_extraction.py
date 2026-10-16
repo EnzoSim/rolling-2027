@@ -33,6 +33,7 @@ ROOT = Path(__file__).resolve().parent
 COMMAND_RE = re.compile(r"^\s*/extraction\b", re.MULTILINE)
 PAGE_RE = re.compile(r"^\s*PAGE\s+(\d+)\s*$", re.IGNORECASE)
 DASH_RE = re.compile(r"^\s*(?P<name>[^|]+?)\s*\|\s*[-–—]\s*\|\s*(?P<source>.+?)\s*$")
+EFFECTIFS_RE = re.compile(r"^\s*EFFECTIFS\s*:\s*(?P<value>.*?)\s*$", re.IGNORECASE)
 FENCE_RE = re.compile(r"^\s*```")
 # Un rapport d'institut ne se télécharge que depuis le site de l'institut lui-même.
 REPORT_HOSTS = (
@@ -136,8 +137,12 @@ def _without_registered(line):
     return f"{head}: {' | '.join(item.strip() for item in kept)}"
 
 
-def check_tables(pages_text, page_blocks, known):
-    """Chaque tableau passé par parse_tables (citation, candidat, valeur, total, effectifs)."""
+def check_tables(pages_text, page_blocks, known, base_pages=()):
+    """Chaque tableau passé par parse_tables (citation, candidat, valeur, total), puis ses effectifs.
+
+    Un effectif se lit sur la page de son tableau, ou, pour un rapport d'institut, sur une
+    de ses pages de méthodologie (`base_pages`).
+    """
     pages = {page.number: page for page in notice.split_pages(pages_text)}
     tables = []
     for number, lines in sorted(page_blocks.items()):
@@ -146,6 +151,8 @@ def check_tables(pages_text, page_blocks, known):
             raise SubmissionError(f"la notice n'a pas de page {number}")
         for index, block in enumerate(_blocks(lines), 1):
             block = [_without_registered(line) for line in block]
+            counts = [EFFECTIFS_RE.match(line) for line in block]
+            block = [line for line, count in zip(block, counts) if not count]
             dashes = [DASH_RE.match(line) for line in block]
             numeric = [line for line, dash in zip(block, dashes) if not dash]
             answer = "\n".join(["TABLEAU", *numeric, "FIN"])
@@ -153,12 +160,40 @@ def check_tables(pages_text, page_blocks, known):
             if failures or len(parsed) != 1:
                 raise SubmissionError("; ".join(failures) or f"page {number}, tableau {index} : illisible")
             table = parsed[0]
+            value = next((count["value"] for count in counts if count), "")
+            samples = _samples(value, (page, *base_pages), f"page {number}, tableau {index}")
             extra = tuple(_dash_value(dash, page, known) for dash in dashes if dash)
             names = [extraction._norm(value.name) for value in (*extra, *table.values)]
             if len(names) != len(set(names)):
                 raise SubmissionError(f"page {number}, tableau {index} : un candidat est présent deux fois")
-            tables.append(extraction.ExtractedTable(table.page, table.tour, table.samples, extra + table.values))
+            tables.append(extraction.ExtractedTable(table.page, table.tour, samples, extra + table.values))
     return tables
+
+
+def _samples(value, pages, where):
+    """Les effectifs d'un tableau, chacun écrit sur l'une de ces pages (la sienne d'abord)."""
+    try:
+        samples = extraction._parse_samples(value)
+    except extraction.ValidationError as exc:
+        raise SubmissionError(f"{where} : {exc}") from exc
+    for _label, count in samples:
+        if not any(extraction.source_has_number(page.text, count) for page in pages):
+            raise SubmissionError(f"{where} : l'effectif {count} est absent de la page")
+    return samples
+
+
+def base_pages(report, methodology):
+    """Les pages d'un rapport qui portent les deux dates du terrain : sa méthodologie.
+
+    Odoxa (#8, notice 10310) n'écrit pas les bases sous ses tableaux mais en page 3 du
+    rapport : « 7 599 (hypothèse Philippe) à 7 374 (hypothèse Attal) individus au 1er tour ».
+    """
+    return tuple(
+        page
+        for page in notice.split_pages(report)
+        if extraction._source_has_date(page.text, methodology.start)
+        and extraction._source_has_date(page.text, methodology.end)
+    )
 
 
 def report_text(url):
@@ -185,7 +220,8 @@ def verify(text, filename, notice_text):
         )
     except extraction.ValidationError as exc:
         raise SubmissionError(f"méthodologie : {exc}") from exc
-    tables = check_tables(tables_text, page_blocks, extraction.candidate_names(ROOT / "candidats.csv"))
+    known = extraction.candidate_names(ROOT / "candidats.csv")
+    tables = check_tables(tables_text, page_blocks, known, base_pages(tables_text, methodology) if report else ())
     try:
         proposal = build_proposal(filename, methodology, tables, ROOT)
     except ProposalError as exc:

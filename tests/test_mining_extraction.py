@@ -210,6 +210,21 @@ def test_un_jour_a_deux_chiffres_avec_zero_est_reconnu():
     assert not extraction._source_has_date(HARRIS_DATES, "2026-09-09")
 
 
+def test_une_plage_sur_deux_mois_justifie_ses_deux_bouts():
+    # #8 : la notice Odoxa 10310 écrit une seule plage, l'année après le second mois.
+    odoxa = "Du 24 septembre au 7 octobre 2026"
+    assert extraction._source_has_date(odoxa, "2026-09-24")
+    assert extraction._source_has_date(odoxa, "2026-10-07")
+    assert not extraction._source_has_date(odoxa, "2025-09-24"), "l'année est celle de la plage"
+    assert not extraction._source_has_date(odoxa, "2026-09-25")
+    assert not extraction._source_has_date(odoxa, "2026-10-24"), "le 24 est en septembre"
+    passage = "du 28 décembre au 3 janvier 2027"
+    assert extraction._source_has_date(passage, "2026-12-28"), "décembre est l'année d'avant"
+    assert extraction._source_has_date(passage, "2027-01-03")
+    assert not extraction._source_has_date(passage, "2027-12-28")
+    assert extraction._source_has_date("du 1er au 3 octobre 2026", "2026-10-01"), "le même mois, comme avant"
+
+
 class TruncatingClient:
     """Première réponse coupée par max_tokens, seconde complète."""
 

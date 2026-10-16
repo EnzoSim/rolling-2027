@@ -1,6 +1,7 @@
 """rolling-2027 : le dépouillement manuel (bot ou humain) passe par les validateurs du dépôt."""
 
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -170,3 +171,64 @@ def test_une_publication_en_panne_laisse_l_issue_ouverte(monkeypatch, tmp_path):
     assert code == 1
     assert [(url, method) for url, method, _ in calls] == [(f"{ISSUE_URL}/comments", "POST")]
     assert "la publication a échoué" in calls[0][2]["body"]
+
+
+# Cas réel, issue #8 (Odoxa, notice 10310) : le rapport écrit ses bases en page de
+# méthodologie, pas sous ses tableaux.
+RAPPORT = """--- page 3 ---
+Méthodologie Enquête réalisée par Internet du 24 septembre au 7 octobre 2026.
+• 7 599 (hypothèse Philippe) à 7 374 (hypothèse Attal) individus au 1er tour
+--- page 12 ---
+Intentions de vote au premier tour Hypothèse : Edouard Philippe candidat
+Nathalie Arthaud 0,5%
+Fabien Roussel 2%
+Jean-Luc Mélenchon 18%
+Marine Tondelier 3%
+Raphaël Glucksmann 9,5%
+Edouard Philippe 17%
+Bruno Retailleau 6,5%
+Nicolas Dupont-Aignan 2%
+Marine Le Pen 37%
+Éric Zemmour 4,5%
+"""
+TABLEAU_12 = [
+    "TABLEAU",
+    "TOUR: 1er Tour",
+    "EFFECTIFS: exprimé une intention de vote = 7599",
+    "Nathalie Arthaud | 0.5 | Nathalie Arthaud 0,5%",
+    "Fabien Roussel | 2 | Fabien Roussel 2%",
+    "Jean-Luc Mélenchon | 18 | Jean-Luc Mélenchon 18%",
+    "Marine Tondelier | 3 | Marine Tondelier 3%",
+    "Raphaël Glucksmann | 9.5 | Raphaël Glucksmann 9,5%",
+    "Édouard Philippe | 17 | Edouard Philippe 17%",
+    "Bruno Retailleau | 6.5 | Bruno Retailleau 6,5%",
+    "Nicolas Dupont-Aignan | 2 | Nicolas Dupont-Aignan 2%",
+    "Marine Le Pen | 37 | Marine Le Pen 37%",
+    "Éric Zemmour | 4.5 | Éric Zemmour 4,5%",
+    "FIN",
+]
+TERRAIN = SimpleNamespace(start="2026-09-24", end="2026-10-07")
+
+
+def _candidats():
+    return se.extraction.candidate_names(se.ROOT / "candidats.csv")
+
+
+def test_la_methodologie_d_un_rapport_est_la_page_qui_porte_les_dates_du_terrain():
+    assert [page.number for page in se.base_pages(RAPPORT, TERRAIN)] == [3]
+
+
+def test_un_rapport_peut_ecrire_ses_bases_en_page_de_methodologie():
+    tables = se.check_tables(RAPPORT, {12: TABLEAU_12}, _candidats(), se.base_pages(RAPPORT, TERRAIN))
+    assert [count for _label, count in tables[0].samples] == [7599]
+
+
+def test_sur_une_notice_l_effectif_reste_sur_la_page_du_tableau():
+    with pytest.raises(se.SubmissionError, match="l'effectif 7599 est absent de la page"):
+        se.check_tables(RAPPORT, {12: TABLEAU_12}, _candidats())
+
+
+def test_un_effectif_ecrit_nulle_part_est_refuse():
+    faux = [line.replace("= 7599", "= 7600") for line in TABLEAU_12]
+    with pytest.raises(se.SubmissionError, match="page 12, tableau 1 : l'effectif 7600"):
+        se.check_tables(RAPPORT, {12: faux}, _candidats(), se.base_pages(RAPPORT, TERRAIN))
