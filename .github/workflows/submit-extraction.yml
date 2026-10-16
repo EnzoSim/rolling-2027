@@ -5,9 +5,21 @@ name: Submit extraction
 #   /extraction  puis le dépouillement (docs/BOT.md) : vérifié contre la notice, PR, fusion ;
 #   /sans-iv     la notice n'a pas d'intentions de vote : label, issue fermée ;
 #   /sans-resultats  la notice pose les questions sans donner les chiffres : label, issue ouverte.
+# « Run workflow » (issue + identifiant du commentaire) rejoue un commentaire déjà posté,
+# par exemple avant que ce workflow existe.
 on:
   issue_comment:
     types: [created]
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: "Numéro de l'issue"
+        required: true
+        type: string
+      comment_id:
+        description: "Identifiant du commentaire à rejouer"
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -17,31 +29,46 @@ permissions:
   actions: write
 
 concurrency:
-  group: submit-extraction-${{ github.event.issue.number }}
+  group: submit-extraction-${{ github.event.issue.number || inputs.issue }}
   cancel-in-progress: false
 
 jobs:
   submit:
     if: >-
-      !github.event.issue.pull_request &&
-      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
-      (contains(github.event.comment.body, '/extraction') ||
-       contains(github.event.comment.body, '/sans-iv') ||
-       contains(github.event.comment.body, '/sans-resultats'))
+      github.event_name == 'workflow_dispatch' ||
+      (!github.event.issue.pull_request &&
+       contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
+       (contains(github.event.comment.body, '/extraction') ||
+        contains(github.event.comment.body, '/sans-iv') ||
+        contains(github.event.comment.body, '/sans-resultats')))
     runs-on: ubuntu-latest
+    env:
+      ISSUE: ${{ github.event.issue.number || inputs.issue }}
     steps:
-      # La commande doit ouvrir une ligne ; le corps passe par l'environnement, jamais
-      # dans le script (injection de shell).
+      # Le corps passe par un fichier et l'environnement, jamais dans le script (injection
+      # de shell). Rejoué à la main, le commentaire doit venir de quelqu'un qui a les droits.
       - name: Lire la commande
         id: command
         env:
+          EVENT: ${{ github.event_name }}
           BODY: ${{ github.event.comment.body }}
+          COMMENT_ID: ${{ inputs.comment_id }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if printf '%s\n' "$BODY" | grep -qE '^[[:space:]]*/extraction([[:space:]]|$)'; then
+          if ! printf '%s' "$ISSUE" | grep -qE '^[0-9]+$'; then echo "::error::issue invalide"; exit 1; fi
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            if ! printf '%s' "$COMMENT_ID" | grep -qE '^[0-9]+$'; then echo "::error::comment_id invalide"; exit 1; fi
+            assoc=$(gh api "repos/$GITHUB_REPOSITORY/issues/comments/$COMMENT_ID" --jq .author_association)
+            case "$assoc" in OWNER|MEMBER|COLLABORATOR) ;; *) echo "::error::auteur sans droits ($assoc)"; exit 1;; esac
+            gh api "repos/$GITHUB_REPOSITORY/issues/comments/$COMMENT_ID" --jq .body > "$RUNNER_TEMP/comment.txt"
+          else
+            printf '%s\n' "$BODY" > "$RUNNER_TEMP/comment.txt"
+          fi
+          if grep -qE '^[[:space:]]*/extraction([[:space:]]|$)' "$RUNNER_TEMP/comment.txt"; then
             echo "mode=extraction" >> "$GITHUB_OUTPUT"
-          elif printf '%s\n' "$BODY" | grep -qE '^[[:space:]]*/sans-iv([[:space:]]|$)'; then
+          elif grep -qE '^[[:space:]]*/sans-iv([[:space:]]|$)' "$RUNNER_TEMP/comment.txt"; then
             echo "mode=sans-iv" >> "$GITHUB_OUTPUT"
-          elif printf '%s\n' "$BODY" | grep -qE '^[[:space:]]*/sans-resultats([[:space:]]|$)'; then
+          elif grep -qE '^[[:space:]]*/sans-resultats([[:space:]]|$)' "$RUNNER_TEMP/comment.txt"; then
             echo "mode=sans-resultats" >> "$GITHUB_OUTPUT"
           else
             echo "mode=none" >> "$GITHUB_OUTPUT"
@@ -51,7 +78,6 @@ jobs:
         if: steps.command.outputs.mode == 'sans-iv'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ISSUE: ${{ github.event.issue.number }}
         run: |
           gh issue edit "$ISSUE" --repo "$GITHUB_REPOSITORY" --add-label sans-intentions-de-vote --remove-label intentions-a-verifier || true
           gh issue close "$ISSUE" --repo "$GITHUB_REPOSITORY" --comment "Pas d'intentions de vote dans cette notice : issue fermée."
@@ -60,7 +86,6 @@ jobs:
         if: steps.command.outputs.mode == 'sans-resultats'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ISSUE: ${{ github.event.issue.number }}
         run: |
           gh label create resultats-hors-notice --repo "$GITHUB_REPOSITORY" --color fbca04 --force >/dev/null
           gh issue edit "$ISSUE" --repo "$GITHUB_REPOSITORY" --add-label avec-intentions-de-vote,resultats-hors-notice
@@ -83,10 +108,8 @@ jobs:
       - name: Vérifier, ouvrir la PR, fusionner
         if: steps.command.outputs.mode == 'extraction'
         env:
-          COMMENT_BODY: ${{ github.event.comment.body }}
-          ISSUE: ${{ github.event.issue.number }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ROLLING_AUTOMERGE: ${{ vars.ROLLING_AUTOMERGE || '1' }}
           PYTHONUNBUFFERED: "1"
-        run: python submit_extraction.py --issue "$ISSUE" --body-env COMMENT_BODY --post --pr
+        run: python submit_extraction.py --issue "$ISSUE" --input "$RUNNER_TEMP/comment.txt" --post --pr

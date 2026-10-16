@@ -91,3 +91,13 @@ def test_le_rapport_vient_du_site_d_un_institut():
 def test_le_commentaire_garde_son_texte_sans_commande_ni_cloture():
     body = "/extraction\n```\nINSTITUT: IFOP\n```\n"
     assert se.strip_command(body) == "INSTITUT: IFOP"
+
+
+def test_la_base_des_inscrits_dans_effectifs_est_ignoree():
+    """Cas réel, issue #17 : le bot avait recopié « inscrits … = 978 » dans EFFECTIFS."""
+    avec = PAGE_9.replace(
+        "EFFECTIFS: exprimé une intention de vote = 1050",
+        "EFFECTIFS: inscrits sur les listes électorales = 1390 | exprimé une intention de vote = 1050",
+    )
+    proposal, _ = se.verify(METHODOLOGY + avec, "essai-bot.pdf", NOTICE)
+    assert proposal.polls[0]["sous_echantillon1"] == 1390

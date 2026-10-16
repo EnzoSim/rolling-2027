@@ -68,7 +68,7 @@ FIN
 - **Les tableaux.**
   - un bloc `TABLEAU` … `FIN` par tableau, dans l'ordre de la page ;
   - `TOUR: 1er Tour` ou `TOUR: 2nd Tour` ;
-  - `EFFECTIFS` reprend les bases écrites sur la page (« exprimé une intention de vote = … | certains d'aller voter = … »), jamais celles de la note sur les marges.
+  - `EFFECTIFS` reprend les bases écrites sur la page (« exprimé une intention de vote = … | certains d'aller voter = … »), jamais celles de la note sur les marges. Les inscrits n'y vont pas : ils sont dans `INSCRITS` (une base « inscrits » y est ignorée).
 - **Une ligne par candidat :** `nom | valeur | ligne source`.
   - Le nom s'écrit comme dans `candidats.csv`.
   - La valeur a un point décimal (`2.5`) ; « <1 % » s'écrit `0.5`.
@@ -77,6 +77,8 @@ FIN
   - S'il y a plusieurs colonnes : « Publié », sinon « Redressé », sinon la première. Aucune valeur calculée.
 - **« - ».** Un candidat proposé mais noté « - » (moins de 0,5 % chez l'IFOP) s'écrit `nom | - | ligne source` et vaut 0. Sa ligne doit être celle de la page, sans autre chiffre.
 - **Les contrôles.** Chaque tableau doit faire 100 à 1,5 près. Un second tour a exactement deux candidats.
+
+Un commentaire posté avant que ce workflow existe, ou déjà corrigé ailleurs, se rejoue sans le renvoyer : *Actions › Submit extraction › Run workflow*, avec le numéro de l'issue et l'identifiant du commentaire.
 
 Le dépôt refuse aussi une notice déjà dépouillée (ses hypothèses déjà enregistrées) : rien n'est jamais ajouté deux fois.
 

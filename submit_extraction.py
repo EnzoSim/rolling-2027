@@ -123,6 +123,19 @@ def _dash_value(match, page, known):
     return extraction.CandidateValue(canonical, Decimal("0"), source)
 
 
+def _without_registered(line):
+    """EFFECTIFS sans la base des inscrits : elle est déjà dans la méthodologie (INSCRITS).
+
+    Un bot la recopie volontiers (cas réel, issue #17, OpinionWay : « inscrits sur les
+    listes électorales = 978 ») ; le tableau ne garde que ses propres bases.
+    """
+    if not re.match(r"^\s*EFFECTIFS\s*:", line, re.IGNORECASE):
+        return line
+    head, _, rest = line.partition(":")
+    kept = [item for item in rest.split("|") if "inscrit" not in extraction._norm(item.split("=")[0])]
+    return f"{head}: {' | '.join(item.strip() for item in kept)}"
+
+
 def check_tables(pages_text, page_blocks, known):
     """Chaque tableau passé par parse_tables (citation, candidat, valeur, total, effectifs)."""
     pages = {page.number: page for page in notice.split_pages(pages_text)}
@@ -132,6 +145,7 @@ def check_tables(pages_text, page_blocks, known):
         if page is None:
             raise SubmissionError(f"la notice n'a pas de page {number}")
         for index, block in enumerate(_blocks(lines), 1):
+            block = [_without_registered(line) for line in block]
             dashes = [DASH_RE.match(line) for line in block]
             numeric = [line for line, dash in zip(block, dashes) if not dash]
             answer = "\n".join(["TABLEAU", *numeric, "FIN"])
