@@ -303,7 +303,11 @@ def test_claude_quota_n_arrete_pas_la_cascade(monkeypatch):
     def leve(**kwargs):
         raise module.RateLimitError("trop")
 
-    monkeypatch.setattr(module, "Anthropic", lambda **kw: types.SimpleNamespace(beta=types.SimpleNamespace(messages=types.SimpleNamespace(create=leve))))
+    monkeypatch.setattr(
+        module,
+        "Anthropic",
+        lambda **kw: types.SimpleNamespace(beta=types.SimpleNamespace(messages=types.SimpleNamespace(create=leve))),
+    )
     with pytest.raises(llm.LLMError) as excinfo:
         _claude().ask("sys", "q")
     assert not isinstance(excinfo.value, llm.QuotaExhausted)

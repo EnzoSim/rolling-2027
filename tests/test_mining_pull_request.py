@@ -124,6 +124,7 @@ def test_une_pr_complete_ne_parle_pas_d_incomplet():
 
 # --- rolling-2027 : fusion automatique d'un dépouillement complet ---
 
+
 def _faux_gh(commands):
     views = {"n": 0}
 
@@ -137,7 +138,9 @@ def _faux_gh(commands):
                 return SimpleNamespace(returncode=1, stdout="", stderr="not found")
             return SimpleNamespace(returncode=0, stdout='{"number": 9, "url": "https://example.test/pr/9"}', stderr="")
         if command[:3] == ["gh", "label", "list"]:
-            return SimpleNamespace(returncode=0, stdout='[{"name": "automated"}, {"name": "needs-human-review"}]', stderr="")
+            return SimpleNamespace(
+                returncode=0, stdout='[{"name": "automated"}, {"name": "needs-human-review"}]', stderr=""
+            )
         if command[:3] == ["gh", "pr", "create"]:
             return SimpleNamespace(returncode=0, stdout="https://example.test/pr/9\n", stderr="")
         return SimpleNamespace(returncode=0, stdout="", stderr="")

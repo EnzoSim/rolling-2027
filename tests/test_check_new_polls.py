@@ -55,7 +55,9 @@ def test_rolling_2027_garde_les_notices_rangees_en_primaire(monkeypatch):
     """10314 (IFOP pour LCI, 14 octobre 2026) est classée « Prim » mais contient des IV."""
     import check_new_polls as cnp
 
-    catalog = "filename,categorie\n10313-pres-blocus.pdf,Pres\n10314-pres-climat-post-primaire-ifop-lci.pdf,Prim\nx.pdf,Leg\n"
+    catalog = (
+        "filename,categorie\n10313-pres-blocus.pdf,Pres\n10314-pres-climat-post-primaire-ifop-lci.pdf,Prim\nx.pdf,Leg\n"
+    )
 
     class _Reponse:
         def __init__(self, text):
