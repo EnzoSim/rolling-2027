@@ -1,0 +1,115 @@
+name: Submit extraction
+
+# rolling-2027 : le dépouillement fait à la main, par le bot ou par une personne, sans clé
+# d'API. Un commentaire sous l'issue d'une notice, par quelqu'un qui a les droits du dépôt :
+#   /extraction  puis le dépouillement (docs/BOT.md) : vérifié contre la notice, PR, fusion ;
+#   /sans-iv     la notice n'a pas d'intentions de vote : label, issue fermée ;
+#   /sans-resultats  la notice pose les questions sans donner les chiffres : label, issue ouverte.
+# « Run workflow » (issue + identifiant du commentaire) rejoue un commentaire déjà posté,
+# par exemple avant que ce workflow existe.
+on:
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: "Numéro de l'issue"
+        required: true
+        type: string
+      comment_id:
+        description: "Identifiant du commentaire à rejouer"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  # Relancer post-merge.yml après une fusion faite avec GITHUB_TOKEN.
+  actions: write
+
+concurrency:
+  group: submit-extraction-${{ github.event.issue.number || inputs.issue }}
+  cancel-in-progress: false
+
+jobs:
+  submit:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (!github.event.issue.pull_request &&
+       contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
+       (contains(github.event.comment.body, '/extraction') ||
+        contains(github.event.comment.body, '/sans-iv') ||
+        contains(github.event.comment.body, '/sans-resultats')))
+    runs-on: ubuntu-latest
+    env:
+      ISSUE: ${{ github.event.issue.number || inputs.issue }}
+    steps:
+      # Le corps passe par un fichier et l'environnement, jamais dans le script (injection
+      # de shell). Rejoué à la main, le commentaire doit venir de quelqu'un qui a les droits.
+      - name: Lire la commande
+        id: command
+        env:
+          EVENT: ${{ github.event_name }}
+          BODY: ${{ github.event.comment.body }}
+          COMMENT_ID: ${{ inputs.comment_id }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if ! printf '%s' "$ISSUE" | grep -qE '^[0-9]+$'; then echo "::error::issue invalide"; exit 1; fi
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            if ! printf '%s' "$COMMENT_ID" | grep -qE '^[0-9]+$'; then echo "::error::comment_id invalide"; exit 1; fi
+            assoc=$(gh api "repos/$GITHUB_REPOSITORY/issues/comments/$COMMENT_ID" --jq .author_association)
+            case "$assoc" in OWNER|MEMBER|COLLABORATOR) ;; *) echo "::error::auteur sans droits ($assoc)"; exit 1;; esac
+            gh api "repos/$GITHUB_REPOSITORY/issues/comments/$COMMENT_ID" --jq .body > "$RUNNER_TEMP/comment.txt"
+          else
+            printf '%s\n' "$BODY" > "$RUNNER_TEMP/comment.txt"
+          fi
+          if grep -qE '^[[:space:]]*/extraction([[:space:]]|$)' "$RUNNER_TEMP/comment.txt"; then
+            echo "mode=extraction" >> "$GITHUB_OUTPUT"
+          elif grep -qE '^[[:space:]]*/sans-iv([[:space:]]|$)' "$RUNNER_TEMP/comment.txt"; then
+            echo "mode=sans-iv" >> "$GITHUB_OUTPUT"
+          elif grep -qE '^[[:space:]]*/sans-resultats([[:space:]]|$)' "$RUNNER_TEMP/comment.txt"; then
+            echo "mode=sans-resultats" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=none" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Sans intentions de vote
+        if: steps.command.outputs.mode == 'sans-iv'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue edit "$ISSUE" --repo "$GITHUB_REPOSITORY" --add-label sans-intentions-de-vote --remove-label intentions-a-verifier || true
+          gh issue close "$ISSUE" --repo "$GITHUB_REPOSITORY" --comment "Pas d'intentions de vote dans cette notice : issue fermée."
+
+      - name: Résultats hors de la notice
+        if: steps.command.outputs.mode == 'sans-resultats'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh label create resultats-hors-notice --repo "$GITHUB_REPOSITORY" --color fbca04 --force >/dev/null
+          gh issue edit "$ISSUE" --repo "$GITHUB_REPOSITORY" --add-label avec-intentions-de-vote,resultats-hors-notice
+          gh issue comment "$ISSUE" --repo "$GITHUB_REPOSITORY" --body "Les chiffres ne sont pas dans la notice : envoyer \`/extraction\` avec la ligne \`RAPPORT: <PDF de l'institut>\` (docs/BOT.md)."
+
+      - uses: actions/checkout@v4
+        if: steps.command.outputs.mode == 'extraction'
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        if: steps.command.outputs.mode == 'extraction'
+        with:
+          python-version: "3.13"
+
+      - name: Installer les dépendances de vérification
+        if: steps.command.outputs.mode == 'extraction'
+        run: pip install -r requirements_mining.txt -r requirements_pytests.txt
+
+      - name: Vérifier, ouvrir la PR, fusionner
+        if: steps.command.outputs.mode == 'extraction'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ROLLING_AUTOMERGE: ${{ vars.ROLLING_AUTOMERGE || '1' }}
+          PYTHONUNBUFFERED: "1"
+        run: python submit_extraction.py --issue "$ISSUE" --input "$RUNNER_TEMP/comment.txt" --post --pr
