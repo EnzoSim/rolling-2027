@@ -14,7 +14,9 @@ Ce qui change :
 | Publication | PR en brouillon, relue à la main | fusion automatique si chaque chiffre est retrouvé sur sa ligne de la notice et que les tests passent ; brouillon sinon |
 | Données de l'amont | — | reprises toutes les six heures |
 
-Secrets du dépôt (*Settings → Secrets and variables → Actions*) : `ANTHROPIC_API_KEY` et/ou `XAI_API_KEY` (les clés `OPENROUTER_API_KEY`, `MISTRAL_API_KEY`, `GEMINI_API_KEY` restent en secours). Variables facultatives : `LLM_PROVIDERS` (ordre des fournisseurs, par exemple `xai,anthropic`), `XAI_MODELS`, `ANTHROPIC_MODELS`, `ROLLING_AUTOMERGE` (`0` pour relire chaque PR).
+Sans clé d'API, le bot de dépouillement (ou une personne) répond sous l'issue de chaque notice par `/extraction`, `/sans-iv` ou `/sans-resultats` ; le dépôt vérifie chaque chiffre contre la notice et publie seul : voir [docs/BOT.md](docs/BOT.md).
+
+Secrets du dépôt, facultatifs (*Settings → Secrets and variables → Actions*) : `ANTHROPIC_API_KEY` et/ou `XAI_API_KEY` (les clés `OPENROUTER_API_KEY`, `MISTRAL_API_KEY`, `GEMINI_API_KEY` restent en secours). Variables facultatives : `LLM_PROVIDERS` (ordre des fournisseurs, par exemple `xai,anthropic`), `XAI_MODELS`, `ANTHROPIC_MODELS`, `ROLLING_AUTOMERGE` (`0` pour relire chaque PR).
 
 Flux JSON : `https://raw.githubusercontent.com/EnzoSim/rolling-2027/refs/heads/main/presidentielle2027.json`
 

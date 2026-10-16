@@ -1,0 +1,501 @@
+# notice commission des sondages
+# source_pdf: archives/2026/octobre/10314-pres-climat-politique-post-primaire-ps-pp-ifop-lci-14-octobre.pdf
+# extraction: pdfplumber (layout=True)
+
+--- page 1 ---
+
+Le   climat     politique      après    la  victoire     de
+
+            Raphaël        Glucksmann           à  la  primaire      du
+
+                                    PS  et  de    Place     Publique
+
+                                                  Notice    technique
+
+           FD N° 122851
+           Contacts Ifop :
+
+           Frédéric Dabi
+           Département Opinion et Stratégies d'Entreprise
+           TEL : 01 45 84 14 44
+           prenom.nom@ifop.com
+           OCTOBRE 2026
+
+--- page 2 ---
+
+Méthodologie
+
+        Ce document présente les résultats d’une étude réalisée par l’Ifop. Elle respecte fidèlement
+
+        les principes scientifiques et déontologiques de l’enquête par sondage. Les enseignements
+        qu’elle indique reflètent un état de l’opinion à l’instant de sa réalisation et non pas une
+        prédiction.
+
+        Aucune publication totale ou partielle ne peut être faite sans l’accord exprès de l’Ifop.
+
+         Etude réalisée par Ifop-Fiducial pour LCI et Sud  Radio
+
+             Echantillon    L’enquête a été menée auprès d’un échantillon de 1 390 personnes
+                            inscrites sur les listes électorales, extrait d’un échantillon de 1 525
+
+                            personnes, représentatif de la population française âgée de 18 ans et
+                            plus.
+
+            Méthodologie
+                            La représentativité de l’échantillon a été assurée par la méthode des
+
+                            quotas (sexe, âge, profession de la personne interrogée) après
+                            stratification par région et catégorie d'agglomération.
+
+            Mode de recueil
+
+                            Les interviews ont été réalisées par questionnaire auto-administré en
+                            ligne du 12 au 14 octobre 2026.
+
+        Conditions
+
+        d’interrogation : Les questions ont été placées à la suite des questions permettant d’établir les quotas.
+        Tout interviewé ayant complété un questionnaire a obtenu des points cumulables pour une valeur inférieure
+        à 1 euro.
+
+        L’enquête a fait l’objet d’un redressement sociodémographique (données INSEE 2020) et d’un redressement
+        politique sur la base de la reconstitution des votes suivants : présidentielle 2022 1er tour, européennes 2024,
+        législatives 2024 1er tour.
+
+        NOTICE TECHNIQUE : Ifop                                           2
+
+        Le climat politique après la victoire de Raphaël Glucksmann à la primaire du PS et de Place Publique  Octobre
+        2026
+
+--- page 3 ---
+
+Précision  relative  aux marges   d’erreur
+
+        La théorie statistique permet de mesurer l’incertitude à attacher à chaque résultat
+        d’une enquête. Cette incertitude s’exprime par un intervalle de confiance situé de
+        part et d’autre de la valeur observée et dans lequel la vraie valeur a une probabilité
+
+        déterminée de se trouver. Cette incertitude, communément appelée « marge
+        d’erreur », varie en fonction de la taille de l’échantillon et du pourcentage observé
+        comme le montre le tableau ci-dessous :
+
+                    INTERVALLE DE CONFIANCE   A 95% DE CHANCE
+                  Si le pourcentage trouvé est…
+
+          Taille de 5 ou 95% 10 ou 90% 20 ou 80% 30 ou 70% 40 ou 60% 50%
+         l’échantillon
+            100      4,4       6,0      8,0      9,2       9,8      10,0
+            200      3,1       4,2      5,7      6,5       6,9      7,1
+            300      2,5       3,5      4,6      5,3       5,7      5,8
+            400      2,2       3,0      4,0      4,6       4,9      5,0
+            500      1,9       2,7      3,6      4,1       4,4      4,5
+            600      1,8       2,4      3,3      3,7       4,0      4,1
+            700      1,6       2,3      3,0      3,5       3,7      3,8
+
+            800      1,5       2,1      2,8      3,2       3,5      3,5
+            900      1,4       2,0      2,6      3,0       3,2      3,3
+           1 000     1,4       1,8      2,5      2,8       3,0      3,1
+           1 100     1,3       1,8      2,4      2,7       2,9      3,0
+           1 200     1,2       1,7      2,3      2,6       2,8      2,8
+           1 300     1,2       1,6      2,2      2,5       2,7      2,7
+           1 400     1,1       1,6      2,1      2,4       2,6      2,6
+           1 500     1,1       1,5      2,0      2,3       2,4      2,5
+           2 000     1,0       1,3      1,8      2,0       2,2      2,2
+           3 000     0,8       1,1      1,4      1,6       1,8      1,8
+
+        Exemple de lecture du tableau : dans le cas d’un échantillon de 800 personnes, si le pourcentage mesuré est
+        de 10%, la marge d’erreur est égale à 2,1. Le vrai pourcentage est donc compris entre 7,9% et 12,1%.
+
+        Exemple de lecture du tableau : dans le cas d’un échantillon de 900 personnes, si le pourcentage mesuré est
+        de 10%, la marge d’erreur est égale à 2,0. Le vrai pourcentage est donc compris entre 8,0% et 12,0%.
+        Exemple de lecture du tableau : dans le cas d’un échantillon de 1 000 personnes, si le pourcentage mesuré
+
+        est de 10%, la marge d’erreur est égale à 1,8. Le vrai pourcentage est donc compris entre 8,2% et 11,8%.
+        Exemple de lecture du tableau : dans le cas d’un échantillon de 1 100 personnes, si le pourcentage mesuré
+        est de 10%, la marge d’erreur est égale à 1,8. Le vrai pourcentage est donc compris entre 8,2% et 11,8%.
+
+        NOTICE TECHNIQUE : Ifop                                           3
+
+        Le climat politique après la victoire de Raphaël Glucksmann à la primaire du PS et de Place Publique  Octobre
+        2026
+
+--- page 4 ---
+
+Structure  de l’échantillon
+
+                                                      Brut       Redressé
+
+                                                       (%)         (%)
+         SEXE DE L'INTERVIEWÉ(E)
+
+          Homme                                       48,3        47,7
+          Femme                                       51,7        52,3
+         AGE DE L'INTERVIEWÉ(E)
+          18 à 24 ans                                 11,5        10,3
+          25 à 34 ans                                 15,1        14,8
+
+          34 à 49 ans                                 24,3        24,0
+          50 à 64 ans                                 22,4        24,4
+          65 ans et plus                              26,7        26,5
+         PROFESSION DE L'INTERVIEWÉ(E)
+
+          Travailleur indépendant                      4,5         4,5
+          Cadre et prof. int. supérieure               9,7        11,2
+          Profession intermédiaire                    14,3        15,0
+          Employé                                     16,8        15,8
+
+          Ouvrier                                     13,4        12,1
+          Retraité                                    30,4        29,3
+          Autre inactif                               10,9        12,0
+
+         REGION
+          Grand-Est                                    8,5         8,5
+          Nouvelle-Aquitaine                           8,8         9,5
+          Auvergne-Rhône-Alpes                        11,8        12,3
+
+          Bourgogne-Franche-Comté                      3,7         4,3
+          Bretagne                                     5,5         5,2
+          Centre-Val-De-Loire                          4,1         3,9
+
+          Ile-De-France                               18,4        18,4
+          Occitanie                                   10,0         9,4
+          Hauts-de-France                              9,2         8,9
+
+          Normandie                                    5,1         5,1
+          Pays de la Loire                             6,5         5,9
+          PACA, Corse                                  8,4         8,5
+
+         CATEGORIE D’AGGLOMERATION
+          Communes rurales                            22,0        21,1
+          Communes urbaines de province               63,6        62,6
+
+          Agglomération parisienne                    14,4        16,3
+         TOTAL                                        100,0       100,0
+
+         * En raison des arrondis, les totaux sont susceptibles d’être supérieurs ou inférieurs à 100 de 0,1 point.
+
+        NOTICE TECHNIQUE : Ifop                                           4
+
+        Le climat politique après la victoire de Raphaël Glucksmann à la primaire du PS et de Place Publique  Octobre
+        2026
+
+--- page 5 ---
+
+Reconstitution   du  1er tour de l’élection  présidentielle
+
+                                      2022
+
+                                                      Brut       Redressé
+                                                       (%)        (%)
+
+         • Nathalie Arthaud ......................................................................... 0,7 0,6
+         • Philippe Poutou ........................................................................... 1,1 0,8
+
+         • Fabien Roussel ............................................................................. 3,4 2,3
+
+         • Jean-Luc Mélenchon .................................................................... 18,8 21,5
+         • Anne Hidalgo................................................................................ 2,3 1,7
+
+         • Yannick Jadot ............................................................................... 4,3 4,6
+
+         • Emmanuel Macron ...................................................................... 27,8 27,8
+         • Valérie Pécresse ........................................................................... 5,4 4,8
+
+         • Nicolas Dupont-Aignan ................................................................ 2,4 2,1
+         • Marine Le Pen .............................................................................. 25,2 23,5
+
+         • Éric Zemmour............................................................................... 5,2 7,1
+
+         • Jean Lassalle ................................................................................. 3,4 3,2
+           TOTAL .......................................................................................... 100 100
+
+            - Ne se prononcent pas ......................................................... 22,9
+
+         * En raison des arrondis, les totaux sont susceptibles d’être supérieurs ou inférieurs à 100 de 0,1 point.
+
+        NOTICE TECHNIQUE : Ifop                                           5
+
+        Le climat politique après la victoire de Raphaël Glucksmann à la primaire du PS et de Place Publique  Octobre
+        2026
+
+--- page 6 ---
+
+Reconstitution    du vote  aux  élections  européennes    2024
+
+                                                      Brut       Redressé
+
+                                                       (%)         (%)
+           Une liste d’extrême gauche                  1,6         0,7
+
+           La liste de La France insoumise             9,4         9,8
+
+           La liste du Parti Communiste                1,4         2,4
+           La liste du Parti Socialiste et de Place Publique 14,6 13,8
+
+           La liste des Ecologistes                    5,2         5,4
+           La liste de Renaissance                    12,8        14,5
+
+           La liste du Parti Animaliste                1,6         2,0
+
+           Une liste divers écologistes                1,6         2,0
+           La liste Les Républicains                  10,4         7,3
+
+           La liste Alliance Rurale                    1,9         2,4
+           La liste du Rassemblement National         32,1        31,7
+
+           La liste Reconquête                         3,4         5,4
+
+           La liste des Patriotes                      0,8         0,9
+           La liste de l’UPR                           1,3         1,0
+
+           Une autre liste                             1,9         0,7
+          TOTAL                                       100,0       100,0
+
+          Ne se prononcent pas                        40,1
+
+         * En raison des arrondis, les totaux sont susceptibles d’être supérieurs ou inférieurs à 100 de 0,1 point.
+
+        NOTICE TECHNIQUE : Ifop                                           6
+
+        Le climat politique après la victoire de Raphaël Glucksmann à la primaire du PS et de Place Publique  Octobre
+        2026
+
+--- page 7 ---
+
+Reconstitution   du  1er tour des  élections législatives  2024
+
+                                                      Brut       Redressé
+
+                                                       (%)         (%)
+           Extrême gauche                              1,8         1,2
+
+           NFP                                        26,4        28,7
+
+           Divers gauche                               1,2         1,0
+           ENS Ensemble !                             21,6        22,4
+
+           Divers centre                               1,0         0,8
+           LR & DVD                                   10,1         9,5
+
+           RN & alliés                                33,9        34,0
+
+           Droite souverainiste, divers EXD - Reconquête 1,8       1,1
+           DIVERS                                      2,2         1,3
+
+         TOTAL                                        100,0       100,0
+          Ne se prononcent pas                        36,0
+
+         * En raison des arrondis, les totaux sont susceptibles d’être supérieurs ou inférieurs à 100 de 0,1 point.
+
+        NOTICE TECHNIQUE : Ifop                                           7
+
+        Le climat politique après la victoire de Raphaël Glucksmann à la primaire du PS et de Place Publique  Octobre
+        2026
+
+--- page 8 ---
+
+L’intention   d’aller voter
+
+        Question :  [Aux personnes inscrites sur les listes électorales] Vous personnellement,
+                    envisagez-vous d’aller voter à la prochaine élection présidentielle qui aura lieu en
+                    avril 2027 ?
+
+         Base : Ensemble des personnes inscrites sur les listes électorales Brut Redressé
+                                                       (%)        (%)
+
+         • Oui ............................................................................................... 96,0 95,8
+
+         • Non .............................................................................................. 4,0 4,2
+           TOTAL .......................................................................................... 100 100
+
+        Question :  [Aux personnes inscrites sur les listes électorales envisageant d’aller voter à la
+                    prochaine élection présidentielle] Et diriez-vous que… ?
+
+                                                      Brut       Redressé
+                                                       (%)        (%)
+
+         • C’est tout à fait certain ............................................................... 77,0 77,3
+
+         • C’est pratiquement certain ......................................................... 18,3 18,3
+         • Il y a de grandes chances ............................................................ 3,5 2,9
+
+         • Ce n’est pas certain ..................................................................... 1,2 1,5
+
+           TOTAL .......................................................................................... 100 100
+
+        * En raison des arrondis, les totaux sont susceptibles d’être supérieurs ou inférieurs à 100 de 0,1 point
+
+        NOTICE TECHNIQUE : Ifop                                           8
+
+        Le climat politique après la victoire de Raphaël Glucksmann à la primaire du PS et de Place Publique  Octobre
+        2026
+
+--- page 9 ---
+
+L’intention   de vote  au premier   tour  de l’élection
+
+              présidentielle  - E. Philippe  et G. Attal candidats
+
+        Question : Si dimanche prochain se déroulait le premier tour de l’élection présidentielle, pour
+                   lequel des candidats suivants y aurait-il le plus de chances que vous votiez ?
+
+                            - En pourcentage des suffrages exprimés –
+
+     Base : Ensemble des personnes inscrites sur les listes électorales1
+
+                                              Résultats
+                                              publiés
+
+                                               (%)
+                               Nathalie Arthaud -
+                               Jean-Luc Mélenchon 16,0
+                               Fabien Roussel  2,5
+                               Marine Tondelier 2,0
+
+                               Raphaël Glucksmann 14,0
+                               Gabriel Attal   6,0
+                               Edouard Philippe 14,0
+                               Bruno Retailleau 6,5
+                               Nicolas Dupont-Aignan 2,0
+                               Marine Le Pen   34,0
+                               Éric Zemmour    3,0
+                               TOTAL           100,0
+
+                               – Ne se prononcent pas 24,5
+
+        1 Sur toutes les personnes inscrites sur les listes électorales interrogées, 1050 personnes ont exprimé une
+        intention de vote. Sur toutes les personnes inscrites sur les listes électorales et certaines d’aller voter
+        interrogées, 832 personnes ont exprimé une intention de vote.
+
+        NOTICE TECHNIQUE : Ifop                                           9
+
+        Le climat politique après la victoire de Raphaël Glucksmann à la primaire du PS et de Place Publique  Octobre
+        2026
+
+--- page 10 ---
+
+L’intention   de vote  au premier   tour  de l’élection
+
+            présidentielle  - E. Philippe  candidat  du  bloc central
+
+        Question : Si dimanche prochain se déroulait le premier tour de l’élection présidentielle, pour
+                   lequel des candidats suivants y aurait-il le plus de chances que vous votiez ?
+
+                            - En pourcentage des suffrages exprimés –
+
+     Base : Ensemble des personnes inscrites sur les listes électorales2
+
+                                              Résultats
+                                              publiés
+
+                                               (%)
+                               Nathalie Arthaud 0,5
+
+                               Jean-Luc Mélenchon 16,0
+                               Fabien Roussel  3,0
+                               Marine Tondelier 2,5
+                               Raphaël Glucksmann 13,5
+                               Edouard Philippe 18,0
+                               Bruno Retailleau 6,5
+                               Nicolas Dupont-Aignan 2,0
+                               Marine Le Pen   35,0
+                               Éric Zemmour    3,0
+
+                               TOTAL           100,0
+                               – Ne se prononcent pas 24,7
+
+        2 Sur toutes les personnes inscrites sur les listes électorales interrogées, 1047 personnes ont exprimé une
+        intention de vote. Sur toutes les personnes inscrites sur les listes électorales et certaines d’aller voter
+        interrogées, 834 personnes ont exprimé une intention de vote.
+
+        NOTICE TECHNIQUE : Ifop                                           10
+
+        Le climat politique après la victoire de Raphaël Glucksmann à la primaire du PS et de Place Publique  Octobre
+        2026
+
+--- page 11 ---
+
+L’intention   de vote  au premier   tour  de l’élection
+
+             présidentielle   – G. Attal candidat   du bloc  central
+
+        Question : Si dimanche prochain se déroulait le premier tour de l’élection présidentielle, pour
+                   lequel des candidats suivants y aurait-il le plus de chances que vous votiez ?
+
+                            - En pourcentage des suffrages exprimés –
+
+     Base : Ensemble des personnes inscrites sur les listes électorales3
+
+                                              Résultats
+                                              publiés
+
+                                               (%)
+                               Nathalie Arthaud 0,5
+                               Jean-Luc Mélenchon 17,0
+
+                               Fabien Roussel  2,5
+                               Marine Tondelier 2,0
+                               Raphaël Glucksmann 16,0
+                               Gabriel Attal   13,0
+                               Bruno Retailleau 8,0
+                               Nicolas Dupont-Aignan 2,0
+                               Marine Le Pen   36,0
+                               Éric Zemmour    3,0
+
+                               TOTAL           100,0
+                               – Ne se prononcent pas 26,3
+
+        3 Sur toutes les personnes inscrites sur les listes électorales interrogées, 1024 personnes ont exprimé une
+        intention de vote. Sur toutes les personnes inscrites sur les listes électorales et certaines d’aller voter
+        interrogées, 815 personnes ont exprimé une intention de vote.
+
+        NOTICE TECHNIQUE : Ifop                                           11
+
+        Le climat politique après la victoire de Raphaël Glucksmann à la primaire du PS et de Place Publique  Octobre
+        2026
+
+--- page 12 ---
+
+L’intention   de vote  au premier   tour  de l’élection
+
+           présidentielle   – F. Ruffin, D. de Villepin et D.  Lisnard
+                                    candidats
+
+        Question : Si dimanche prochain se déroulait le premier tour de l’élection présidentielle, pour
+                   lequel des candidats suivants y aurait-il le plus de chances que vous votiez ?
+
+                            - En pourcentage des suffrages exprimés –
+
+     Base : Ensemble des personnes inscrites sur les listes électorales4
+
+                                              Résultats
+                                              publiés
+
+                                               (%)
+                               Nathalie Arthaud -
+
+                               Jean-Luc Mélenchon 16,0
+                               Fabien Roussel  2,0
+                               François Ruffin 2,0
+                               Marine Tondelier 2,0
+                               Raphaël Glucksmann 11,5
+                               Gabriel Attal   5,0
+                               Edouard Philippe 13,0
+                               Dominique de Villepin 1,5
+                               David Lisnard   6,0
+
+                               Bruno Retailleau 5,0
+                               Nicolas Dupont-Aignan 1,0
+                               Marine Le Pen   32,0
+                               Éric Zemmour    3,0
+                               TOTAL           100,0
+                               – Ne se prononcent pas 22,2
+
+        4 Sur toutes les personnes inscrites sur les listes électorales interrogées, 1081 personnes ont exprimé une
+        intention de vote. Sur toutes les personnes inscrites sur les listes électorales et certaines d’aller voter
+        interrogées, 858 personnes ont exprimé une intention de vote.
+
+        NOTICE TECHNIQUE : Ifop                                           12
+
+        Le climat politique après la victoire de Raphaël Glucksmann à la primaire du PS et de Place Publique  Octobre
+        2026
