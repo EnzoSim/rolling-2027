@@ -43189,9 +43189,9 @@
           "annonce_candidature": "2026-07-07",
           "retrait_candidature": "",
           "second_round": "",
-          "intentions": 4,
-          "erreur_sup": 1.42,
-          "erreur_inf": -1.42
+          "intentions": 35,
+          "erreur_sup": 3.46,
+          "erreur_inf": -3.46
         },
         {
           "candidate_id": "EZ",
@@ -43203,9 +43203,9 @@
           "annonce_candidature": "",
           "retrait_candidature": "",
           "second_round": "",
-          "intentions": 35,
-          "erreur_sup": 3.46,
-          "erreur_inf": -3.46
+          "intentions": 4,
+          "erreur_sup": 1.42,
+          "erreur_inf": -1.42
         }
       ],
       "poll_id": "20261013_1014_ow_B",
