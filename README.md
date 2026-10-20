@@ -22,6 +22,8 @@ Flux JSON : `https://raw.githubusercontent.com/EnzoSim/rolling-2027/refs/heads/m
 
 Les marchés de prédiction ont leur collecte quotidienne à **6 h 43 UTC** (`Daily prediction markets`, aussi lançable à la main). [data/markets.json](data/markets.json) archive les cotes et l'historique quotidien de Polymarket et de Kalshi, séparément, depuis avril. Le collecteur de Ballottage interroge directement les deux fournisseurs ; aucune clé ni compte n'est nécessaire. Chaque source garde sa date de relevé, les jours passés restent inchangés et une panne conserve la dernière archive valide au lieu de dater d'aujourd'hui des cotes de secours. Ce fichier est distinct des sondages ; Ballottage relève aussi les marchés en direct côté serveur.
 
+`scripts/collect-markets.mjs` est la version autonome des lecteurs de marchés de Ballottage (source `546a9b2`), sans dépendance npm ni accès à son dépôt privé. Il tourne avec Node 24. Pour le régénérer depuis le dépôt Ballottage : `node_modules/.bin/rolldown scripts/collect-markets.mjs --platform node --format esm --file ../rolling-2027/scripts/collect-markets.mjs` (garder le SHA source dans le commentaire en tête du fichier).
+
 ---
 
 Compilation des sondages d'intention de vote à l'occasion des élections présidentielles 2027 en France.

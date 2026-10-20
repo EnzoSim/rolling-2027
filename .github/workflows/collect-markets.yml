@@ -20,23 +20,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Read Ballottage's market collector
-        uses: actions/checkout@v4
-        with:
-          repository: EnzoSim/second-tour
-          path: .market-collector
-          persist-credentials: false
-          sparse-checkout-cone-mode: false
-          sparse-checkout: |
-            /scripts/collect-markets.mjs
-            /server/
-            /src/
-            /package.json
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
       - name: Collect actual quotes and daily histories from both providers
-        run: node .market-collector/scripts/collect-markets.mjs data/markets.json
+        run: node scripts/collect-markets.mjs data/markets.json
       - name: Publish the dated archive
         run: |
           git config user.name "github-actions[bot]"
