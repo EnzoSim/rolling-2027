@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "collectedAt": "2026-10-20T03:07:47.850Z",
+  "collectedAt": "2026-10-20T12:06:16.932Z",
   "sources": {
     "polymarket": "https://polymarket.com/event/next-french-presidential-election",
     "kalshi": "https://kalshi.com/markets/kxfrenchpres/french-presidential-election"
@@ -9,13 +9,13 @@
     "status": {
       "polymarket": {
         "mode": "live",
-        "asOf": "2026-10-20T03:07:42.133Z",
-        "checkedAt": "2026-10-20T03:07:42.133Z"
+        "asOf": "2026-10-20T12:06:10.661Z",
+        "checkedAt": "2026-10-20T12:06:10.661Z"
       },
       "kalshi": {
         "mode": "live",
-        "asOf": "2026-10-20T03:07:42.362Z",
-        "checkedAt": "2026-10-20T03:07:42.362Z"
+        "asOf": "2026-10-20T12:06:10.720Z",
+        "checkedAt": "2026-10-20T12:06:10.720Z"
       }
     },
     "history": {
@@ -743,7 +743,7 @@
           },
           {
             "day": "2026-10-20",
-            "cents": 46.1
+            "cents": 46.7
           }
         ],
         "philippe": [
@@ -2989,7 +2989,7 @@
           },
           {
             "day": "2026-10-20",
-            "cents": 4.8
+            "cents": 4.5
           }
         ],
         "hollande": [
@@ -6723,7 +6723,7 @@
           },
           {
             "day": "2026-10-20",
-            "cents": 0.8
+            "cents": 0.7
           }
         ],
         "villepin": [
@@ -8973,7 +8973,7 @@
           },
           {
             "day": "2026-10-20",
-            "cents": 11.8
+            "cents": 11.7
           }
         ],
         "bardella": [
@@ -16551,16 +16551,16 @@
       }
     },
     "polymarket": {
-      "lepen": 46.1,
+      "lepen": 46.7,
       "bardella": 0.6,
-      "zemmour": 0.8,
+      "zemmour": 0.7,
       "philippe": 18.5,
-      "lisnard": 11.8,
+      "lisnard": 11.7,
       "ruffin": 0.1,
       "attal": 1.2,
       "retailleau": 0.7,
       "hollande": 2,
-      "glucksmann": 4.8,
+      "glucksmann": 4.5,
       "melenchon": 10.5,
       "tondelier": 0.1,
       "roussel": 0.1,
@@ -16572,18 +16572,18 @@
       "glucksmann": null,
       "tondelier": null,
       "roussel": null,
-      "lecornu": 0.4,
       "knafo": 0.8,
-      "ruffin": 0.3,
-      "attal": 1.5,
-      "philippe": 16.5,
-      "melenchon": 8.6,
-      "lisnard": 10.5,
-      "lepen": 51.5,
       "hollande": 4.5,
+      "lisnard": 10.5,
+      "melenchon": 8.6,
+      "lepen": 51.5,
+      "ruffin": 0.3,
+      "lecornu": 0.4,
+      "attal": 1.5,
+      "retailleau": 0.9,
       "zemmour": 0.5,
       "villepin": 0.4,
-      "retailleau": 0.9,
+      "philippe": 16.5,
       "bardella": 1.5
     }
   }
