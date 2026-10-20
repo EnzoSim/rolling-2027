@@ -20,6 +20,8 @@ Secrets du dépôt, facultatifs (*Settings → Secrets and variables → Actions
 
 Flux JSON : `https://raw.githubusercontent.com/EnzoSim/rolling-2027/refs/heads/main/presidentielle2027.json`
 
+Les marchés de prédiction ont leur collecte quotidienne à **6 h 43 UTC** (`Daily prediction markets`, aussi lançable à la main). [data/markets.json](data/markets.json) archive les cotes et l'historique quotidien de Polymarket et de Kalshi, séparément, depuis avril. Le collecteur de Ballottage interroge directement les deux fournisseurs ; aucune clé ni compte n'est nécessaire. Chaque source garde sa date de relevé, les jours passés restent inchangés et une panne conserve la dernière archive valide au lieu de dater d'aujourd'hui des cotes de secours. Ce fichier est distinct des sondages ; Ballottage relève aussi les marchés en direct côté serveur.
+
 ---
 
 Compilation des sondages d'intention de vote à l'occasion des élections présidentielles 2027 en France.
