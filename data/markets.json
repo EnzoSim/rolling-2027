@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "collectedAt": "2026-10-20T03:01:44.238Z",
+  "collectedAt": "2026-10-20T03:07:47.850Z",
   "sources": {
     "polymarket": "https://polymarket.com/event/next-french-presidential-election",
     "kalshi": "https://kalshi.com/markets/kxfrenchpres/french-presidential-election"
@@ -9,13 +9,13 @@
     "status": {
       "polymarket": {
         "mode": "live",
-        "asOf": "2026-10-20T03:01:40.337Z",
-        "checkedAt": "2026-10-20T03:01:40.337Z"
+        "asOf": "2026-10-20T03:07:42.133Z",
+        "checkedAt": "2026-10-20T03:07:42.133Z"
       },
       "kalshi": {
         "mode": "live",
-        "asOf": "2026-10-20T03:01:40.528Z",
-        "checkedAt": "2026-10-20T03:01:40.528Z"
+        "asOf": "2026-10-20T03:07:42.362Z",
+        "checkedAt": "2026-10-20T03:07:42.362Z"
       }
     },
     "history": {
@@ -16578,9 +16578,9 @@
       "attal": 1.5,
       "philippe": 16.5,
       "melenchon": 8.6,
-      "hollande": 4.5,
       "lisnard": 10.5,
       "lepen": 51.5,
+      "hollande": 4.5,
       "zemmour": 0.5,
       "villepin": 0.4,
       "retailleau": 0.9,
