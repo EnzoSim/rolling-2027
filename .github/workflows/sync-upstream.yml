@@ -39,7 +39,10 @@ jobs:
             echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          git merge --no-edit --no-commit upstream/main || true
+          if ! git merge --no-edit --no-commit upstream/main; then
+            # Une erreur Git sans conflit (réseau, historique, etc.) reste un échec.
+            test -n "$(git diff --name-only --diff-filter=U)" || exit 1
+          fi
           # Fichiers générés, README et compteur : les nôtres, recalculés plus bas.
           for f in presidentielle2027.csv presidentielle2027.json README.md .last_poll_count; do
             git checkout --ours -- "$f" 2>/dev/null && git add -- "$f" || true
@@ -51,6 +54,10 @@ jobs:
           fi
           echo "changed=true" >> "$GITHUB_OUTPUT"
 
+      - name: Installer les dépendances de vérification
+        if: steps.merge.outputs.changed == 'true'
+        run: python -m pip install -r requirements_pytests.txt
+
       - name: Régénérer et pousser
         if: steps.merge.outputs.changed == 'true'
         run: |
@@ -59,15 +66,16 @@ jobs:
           python csv_to_json.py
           python update_badge.py
           python update_top_hypotheses.py
+          # Une fusion CSV peut réussir tout en dupliquant des poll_id ou en
+          # associant un résultat à la mauvaise hypothèse : jamais les publier.
+          python -m pytest -q
           git add -A polls polls.csv hypotheses.csv candidats.csv presidentielle2027.csv presidentielle2027.json README.md
           git commit -m "🔄 Reprise de MieuxVoter/presidentielle2027 [skip ci]"
           git push
 
-      - name: Signaler un échec
-        if: failure()
+      - name: Mettre à jour l’alerte de synchronisation
+        if: success() || failure()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh issue create --repo "$GITHUB_REPOSITORY" \
-            --title "⚠️ Synchronisation avec Mieux Voter en échec" \
-            --body "La fusion de MieuxVoter/presidentielle2027 a échoué : ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          SYNC_STATUS: ${{ job.status }}
+        run: python scripts/sync_issue.py "$SYNC_STATUS"
