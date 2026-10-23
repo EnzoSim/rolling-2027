@@ -1,5 +1,5 @@
 # rolling-2027
-![Sondages agrégés](https://img.shields.io/badge/sondages_agrégés-357-blue)
+![Sondages agrégés](https://img.shields.io/badge/sondages_agrégés-365-blue)
 
 **rolling-2027** : les sondages de la présidentielle 2027, publiés dans l'heure.
 
@@ -43,9 +43,9 @@ Classement des scénarios (hypothèses de candidatures) les plus fréquemment te
 <!-- TOP_HYPOTHESES:START -->
 | Rang | Sondages | Candidats (🥇) / Diff vs 🥇 (🥈🥉) |
 |:----:|:--------:|----------------------------------|
-| 🥇 | 23 | Bruno Retailleau, Fabien Roussel, Gabriel Attal, Jean-Luc Mélenchon, Marine Le Pen, Marine Tondelier, Nathalie Arthaud, Nicolas Dupont-Aignan, Raphaël Glucksmann, Éric Zemmour |
-| 🥈 | 22 | $\textcolor{green}{\text{+ Édouard Philippe}}$, $\textcolor{red}{\text{− Gabriel Attal}}$ |
-| 🥉 | 19 | $\textcolor{green}{\text{+ Édouard Philippe}}$ |
+| 🥇 | 24 | Bruno Retailleau, Fabien Roussel, Gabriel Attal, Jean-Luc Mélenchon, Marine Le Pen, Marine Tondelier, Nathalie Arthaud, Nicolas Dupont-Aignan, Raphaël Glucksmann, Éric Zemmour |
+| 🥈 | 23 | $\textcolor{green}{\text{+ Édouard Philippe}}$, $\textcolor{red}{\text{− Gabriel Attal}}$ |
+| 🥉 | 20 | $\textcolor{green}{\text{+ Édouard Philippe}}$ |
 
 > 🥇 liste complète des candidats (référence). 🥈🥉 diff vs 🥇 : $\textcolor{green}{\text{+ ajouté}}$ en vert, $\textcolor{red}{\text{− retiré}}$ en rouge.
 <!-- TOP_HYPOTHESES:END -->
