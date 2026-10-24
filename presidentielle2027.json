@@ -39304,50 +39304,6 @@
     {
       "candidats": [
         {
-          "candidate_id": "JLM",
-          "candidat": "Jean-Luc Mélenchon",
-          "complete_name": "Jean-Luc Mélenchon",
-          "name": "Jean-Luc",
-          "surname": "Mélenchon",
-          "parti": "La France Insoumise",
-          "annonce_candidature": "2026-05-03",
-          "retrait_candidature": "",
-          "second_round": "",
-          "intentions": 32,
-          "erreur_sup": 1.12,
-          "erreur_inf": -1.12
-        },
-        {
-          "candidate_id": "MLP",
-          "candidat": "Marine Le Pen",
-          "complete_name": "Marine Le Pen",
-          "name": "Marine",
-          "surname": "Le Pen",
-          "parti": "Rassemblement National",
-          "annonce_candidature": "2026-07-07",
-          "retrait_candidature": "",
-          "second_round": "",
-          "intentions": 68,
-          "erreur_sup": 1.12,
-          "erreur_inf": -1.12
-        }
-      ],
-      "poll_id": "20260924_1007_od_2A",
-      "institut": "ODOXA",
-      "commanditaire": "Backbone, Public Sénat, La Presse Régionale, Le Nouvel Obs",
-      "debut_enquete": "2026-09-24",
-      "fin_enquete": "2026-10-07",
-      "echantillon": 12005,
-      "population": "représentatif de la population française âgée de 18 ans et plus",
-      "hypothese": "H2_9",
-      "tour": "2nd Tour",
-      "rolling": "",
-      "media": "True",
-      "filename": "10310-pres-iv-odoxa-14-octobre.pdf"
-    },
-    {
-      "candidats": [
-        {
           "candidate_id": "EP",
           "candidat": "Édouard Philippe",
           "complete_name": "Édouard Philippe",
@@ -39376,7 +39332,7 @@
           "erreur_inf": -1.14
         }
       ],
-      "poll_id": "20260924_1007_od_2B",
+      "poll_id": "20260924_1007_od_2A",
       "institut": "ODOXA",
       "commanditaire": "Backbone, Public Sénat, La Presse Régionale, Le Nouvel Obs",
       "debut_enquete": "2026-09-24",
@@ -39384,6 +39340,50 @@
       "echantillon": 12005,
       "population": "représentatif de la population française âgée de 18 ans et plus",
       "hypothese": "H2_2",
+      "tour": "2nd Tour",
+      "rolling": "",
+      "media": "True",
+      "filename": "10310-pres-iv-odoxa-14-octobre.pdf"
+    },
+    {
+      "candidats": [
+        {
+          "candidate_id": "JLM",
+          "candidat": "Jean-Luc Mélenchon",
+          "complete_name": "Jean-Luc Mélenchon",
+          "name": "Jean-Luc",
+          "surname": "Mélenchon",
+          "parti": "La France Insoumise",
+          "annonce_candidature": "2026-05-03",
+          "retrait_candidature": "",
+          "second_round": "",
+          "intentions": 32,
+          "erreur_sup": 1.12,
+          "erreur_inf": -1.12
+        },
+        {
+          "candidate_id": "MLP",
+          "candidat": "Marine Le Pen",
+          "complete_name": "Marine Le Pen",
+          "name": "Marine",
+          "surname": "Le Pen",
+          "parti": "Rassemblement National",
+          "annonce_candidature": "2026-07-07",
+          "retrait_candidature": "",
+          "second_round": "",
+          "intentions": 68,
+          "erreur_sup": 1.12,
+          "erreur_inf": -1.12
+        }
+      ],
+      "poll_id": "20260924_1007_od_2B",
+      "institut": "ODOXA",
+      "commanditaire": "Backbone, Public Sénat, La Presse Régionale, Le Nouvel Obs",
+      "debut_enquete": "2026-09-24",
+      "fin_enquete": "2026-10-07",
+      "echantillon": 12005,
+      "population": "représentatif de la population française âgée de 18 ans et plus",
+      "hypothese": "H2_9",
       "tour": "2nd Tour",
       "rolling": "",
       "media": "True",
