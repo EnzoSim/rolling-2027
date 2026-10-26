@@ -43,9 +43,9 @@ class GitHubIssues:
         while True:
             rows = self.request("GET", f"?state=all&per_page=100&page={page}")
             alerts.extend(
-                row for row in rows
-                if "pull_request" not in row
-                and (row["title"] == TITLE or MARKER in (row.get("body") or ""))
+                row
+                for row in rows
+                if "pull_request" not in row and (row["title"] == TITLE or MARKER in (row.get("body") or ""))
             )
             if len(rows) < 100:
                 return sorted(alerts, key=lambda row: row["number"])
@@ -60,8 +60,11 @@ def reconcile(client, status, run_url):
     failed = status == "failure"
     body = (
         f"{MARKER}\n\n"
-        + ("La synchronisation avec MieuxVoter/presidentielle2027 a échoué."
-           if failed else "La synchronisation avec MieuxVoter/presidentielle2027 a réussi.")
+        + (
+            "La synchronisation avec MieuxVoter/presidentielle2027 a échoué."
+            if failed
+            else "La synchronisation avec MieuxVoter/presidentielle2027 a réussi."
+        )
         + f"\n\nDernière exécution : {run_url}\n\n"
         "Cette issue unique est mise à jour à chaque échec, fermée après une réussite "
         "et rouverte si la synchronisation échoue à nouveau.\n"
@@ -70,19 +73,27 @@ def reconcile(client, status, run_url):
         canonical = client.request("POST", data={"title": TITLE, "body": body})
     else:
         canonical = alerts[0]
-        client.request("PATCH", f"/{canonical['number']}", {
-            "body": body,
-            "state": "open" if failed else "closed",
-            "state_reason": "reopened" if failed else "completed",
-        })
+        client.request(
+            "PATCH",
+            f"/{canonical['number']}",
+            {
+                "body": body,
+                "state": "open" if failed else "closed",
+                "state_reason": "reopened" if failed else "completed",
+            },
+        )
 
     for duplicate in alerts[1:]:
         if duplicate["state"] == "open":
-            client.request("PATCH", f"/{duplicate['number']}", {
-                "state": "closed",
-                "state_reason": "not_planned",
-                "body": f"Doublon de #{canonical['number']}.\n\n" + (duplicate.get("body") or ""),
-            })
+            client.request(
+                "PATCH",
+                f"/{duplicate['number']}",
+                {
+                    "state": "closed",
+                    "state_reason": "not_planned",
+                    "body": f"Doublon de #{canonical['number']}.\n\n" + (duplicate.get("body") or ""),
+                },
+            )
     print(f"Alerte #{canonical['number']} : {'ouverte' if failed else 'résolue'}.")
     return canonical["number"]
 
