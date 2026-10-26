@@ -9,6 +9,7 @@ construites à partir de texte de notice ou de commentaire.
 import json
 import subprocess
 import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -50,6 +51,139 @@ def _run(command, root, *, input_text=None, allow_failure=False):
     return completed
 
 
+# rolling-2027 : une fusion vérifiée ne se perd plus sur une panne passagère de GitHub. Le
+# 26 octobre 2026, « gh pr merge » a reçu un 502 Bad Gateway sur rolling-2027#69 : les quatre
+# tableaux étaient vérifiés, mais la PR est restée ouverte jusqu'à ce qu'une personne la
+# fusionne. Ces erreurs-là se retentent, après ces délais (secondes) ; les autres remontent
+# aussitôt, et le rattrapage horaire (`catch_up`, retry-mining.yml) reprend ce qui reste.
+TRANSIENT_MARKERS = (
+    "500 internal",
+    "502",
+    "503",
+    "504",
+    "bad gateway",
+    "service unavailable",
+    "gateway timeout",
+    "timed out",
+    "timeout",
+    "connection reset",
+    "connection refused",
+    "tls handshake",
+    "temporary failure",
+    "secondary rate limit",
+)
+RETRY_DELAYS = (10, 30, 90)
+_sleep = time.sleep
+
+
+def _transient(completed):
+    """Une erreur de GitHub ou du réseau qui peut passer en réessayant."""
+    text = f"{completed.stderr or ''}\n{completed.stdout or ''}".lower()
+    return any(marker in text for marker in TRANSIENT_MARKERS)
+
+
+def _run_retrying(command, root, *, done=None):
+    """`_run`, retenté sur une panne passagère (`RETRY_DELAYS`).
+
+    `done()`, quand il est donné, dit après un échec si l'effet a quand même eu lieu :
+    GitHub peut fusionner une PR et répondre 502.
+    """
+    for delay in (*RETRY_DELAYS, None):
+        completed = _run(command, root, allow_failure=True)
+        if not completed.returncode or (done is not None and done()):
+            return completed
+        if delay is None or not _transient(completed):
+            detail = (completed.stderr or completed.stdout or "").strip().splitlines()
+            raise PullRequestError(f"{' '.join(command[:3])} a échoué : {detail[-1] if detail else 'erreur inconnue'}")
+        _sleep(delay)
+    raise AssertionError("inaccessible")
+
+
+def _pr_state(repo, number, root):
+    """L'état d'une PR (« OPEN », « MERGED », « CLOSED »), ou None si GitHub ne répond pas."""
+    completed = _run(["gh", "pr", "view", str(number), "--repo", repo, "--json", "state"], root, allow_failure=True)
+    if completed.returncode:
+        return None
+    try:
+        return json.loads(completed.stdout).get("state")
+    except (json.JSONDecodeError, AttributeError):
+        return None
+
+
+def merge_verified(repo, number, root, *, rebuild=True):
+    """Fusionne une PR de dépouillement vérifiée, puis relance post-merge.yml.
+
+    Une fusion faite avec GITHUB_TOKEN ne déclenche aucun workflow : post-merge.yml
+    reconstruit le flux à la main (`rebuild`). Chaque appel est retenté sur une panne
+    passagère de GitHub.
+    """
+    _run_retrying(
+        ["gh", "pr", "merge", str(number), "--repo", repo, "--squash", "--delete-branch"],
+        root,
+        done=lambda: _pr_state(repo, number, root) == "MERGED",
+    )
+    if rebuild:
+        _run_retrying(["gh", "workflow", "run", "post-merge.yml", "--repo", repo, "--ref", "main"], root)
+
+
+def pending_verified(repo, root):
+    """Les PR de dépouillement vérifiées restées ouvertes, la plus ancienne d'abord.
+
+    Vérifiée : ouverte prête (jamais en brouillon) par `create_or_update`, sur une branche
+    `mining/issue-N`, étiquetée `automated`, sans `needs-human-review`. Une PR en conflit
+    attend un nouveau dépouillement (`/mining-pr`), qui reconstruit sa branche.
+    """
+    listed = _run_retrying(
+        [
+            "gh",
+            "pr",
+            "list",
+            "--repo",
+            repo,
+            "--state",
+            "open",
+            "--label",
+            "automated",
+            "--limit",
+            "50",
+            "--json",
+            "number,isDraft,headRefName,labels,mergeable",
+        ],
+        root,
+    )
+    try:
+        rows = json.loads(listed.stdout or "[]")
+    except json.JSONDecodeError as exc:
+        raise PullRequestError("gh pr list a renvoyé un JSON illisible") from exc
+    pending = []
+    for row in rows:
+        labels = {label.get("name") for label in row.get("labels") or []}
+        if row.get("isDraft") or "needs-human-review" in labels or row.get("mergeable") == "CONFLICTING":
+            continue
+        if not str(row.get("headRefName", "")).startswith("mining/issue-"):
+            continue
+        pending.append(int(row["number"]))
+    return sorted(pending)
+
+
+def catch_up(repo, root):
+    """Fusionne les PR vérifiées restées ouvertes ; post-merge.yml une seule fois à la fin.
+
+    Renvoie les numéros fusionnés et, pour chaque échec, son numéro et sa raison : une PR
+    qui échoue n'empêche pas les suivantes.
+    """
+    merged, failures = [], []
+    for number in pending_verified(repo, root):
+        try:
+            merge_verified(repo, number, root, rebuild=False)
+            merged.append(number)
+        except PullRequestError as exc:
+            failures.append((number, str(exc)))
+    if merged:
+        _run_retrying(["gh", "workflow", "run", "post-merge.yml", "--repo", repo, "--ref", "main"], root)
+    return merged, failures
+
+
 def _working_tree_clean(root):
     status = _run(["git", "status", "--porcelain"], root).stdout.strip()
     if status:
@@ -73,19 +207,32 @@ def _safe(text):
     return str(text or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("```", "'''")
 
 
-def body(issue, proposal, models, calls):
-    """Corps de PR relisible : toutes les valeurs pointent vers leur citation."""
+def body(issue, proposal, models, calls, ready=False):
+    """Corps de PR relisible : toutes les valeurs pointent vers leur citation.
+
+    `ready` : le dépouillement est complet et vérifié (`can_automerge`), la PR se fusionne
+    seule ; elle ne se dit alors pas brouillon, pour qu'on ne la croie pas en attente.
+    """
     method = proposal.methodology
-    lines = [
-        "# Proposition de sondage générée automatiquement",
-        "",
-        f"Closes #{issue}",
-        "",
-        "> 🤖 Cette PR est un brouillon. Une comparaison humaine avec la notice/PDF est obligatoire avant fusion.",
-        "",
-        "- [ ] J'ai comparé chaque tableau et la méthodologie au PDF source.",
-        "",
-    ]
+    lines = ["# Proposition de sondage générée automatiquement", "", f"Closes #{issue}", ""]
+    if ready:
+        lines.extend(
+            [
+                "> 🤖 Dépouillement vérifié automatiquement : chaque chiffre est retrouvé sur sa ligne de la"
+                " notice, pytest et merge.py passent. Cette PR se fusionne seule ; si elle reste ouverte, le"
+                " rattrapage horaire (retry-mining.yml) la fusionne.",
+                "",
+            ]
+        )
+    else:
+        lines.extend(
+            [
+                "> 🤖 Cette PR est un brouillon. Une comparaison humaine avec la notice/PDF est obligatoire avant fusion.",
+                "",
+                "- [ ] J'ai comparé chaque tableau et la méthodologie au PDF source.",
+                "",
+            ]
+        )
     if proposal.missing:
         lines.extend(
             [
@@ -238,7 +385,7 @@ def create_or_update(issue, repo, proposal, root, models=(), calls=0, automerge=
     _run(["git", "commit", "-m", f"🤖 Ajout sondage depuis l'issue #{issue}"], root)
     _run(["git", "push", "--force-with-lease", "--set-upstream", "origin", branch], root)
 
-    content = body(issue, proposal, models, calls)
+    content = body(issue, proposal, models, calls, ready=ready)
     existing = _existing_pr(repo, branch, root)
     title = f"🤖 Proposition de sondage — issue #{issue}"
     if existing:
@@ -274,6 +421,5 @@ def create_or_update(issue, repo, proposal, root, models=(), calls=0, automerge=
     warning = _apply_labels(repo, number, root, review=not ready)
     if not ready:
         return PullRequest(number, url, branch, warning)
-    _run(["gh", "pr", "merge", str(number), "--repo", repo, "--squash", "--delete-branch"], root)
-    _run(["gh", "workflow", "run", "post-merge.yml", "--repo", repo, "--ref", "main"], root)
+    merge_verified(repo, number, root)
     return PullRequest(number, url, branch, warning, merged=True)

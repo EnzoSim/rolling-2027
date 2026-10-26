@@ -2,7 +2,9 @@ name: Retry mining
 
 # rolling-2027 : relance seule le dépouillement des notices restées sans tri (pas de
 # clé configurée au moment de l'issue, quota épuisé, notice illisible). Toutes les
-# heures, au plus cinq issues par passage, la plus ancienne d'abord.
+# heures, au plus cinq issues par passage, la plus ancienne d'abord. Le même passage
+# fusionne les PR de dépouillement vérifiées restées ouvertes (une panne de GitHub
+# pendant la fusion automatique, rolling-2027#69 le 26 octobre 2026).
 on:
   schedule:
     - cron: '47 * * * *'
@@ -32,3 +34,25 @@ jobs:
             echo "Relance du dépouillement de l'issue #$n"
             gh workflow run llm-mining.yml --repo "$GITHUB_REPOSITORY" -f issue="$n" -f mode=mining-pr
           done
+
+  merge-verified:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Fusionner les PR vérifiées restées ouvertes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ROLLING_AUTOMERGE: ${{ vars.ROLLING_AUTOMERGE || '1' }}
+        run: |
+          python merge_verified_prs.py --repo "$GITHUB_REPOSITORY"
