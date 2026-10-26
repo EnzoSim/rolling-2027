@@ -202,3 +202,142 @@ def test_git_add_recoit_les_fichiers_de_resultats_par_poll_id(monkeypatch, tmp_p
     add = next(c for c in commands if c[:2] == ["git", "add"])
     assert "polls/20260909_0910_ow_A.csv" in add
     assert not any("{" in part for part in add)
+
+
+# --- rolling-2027 : une fusion vérifiée ne se perd plus sur une panne de GitHub ---
+# Cas réel, rolling-2027#69 (26 octobre 2026) : quatre tableaux vérifiés, puis « gh pr merge »
+# a reçu un 502 Bad Gateway et la PR est restée ouverte.
+
+BAD_GATEWAY = 'non-200 OK status code: 502 Bad Gateway body: "<html>502 Bad Gateway</html>"'
+MERGE = ["gh", "pr", "merge", "9", "--repo", "EnzoSim/rolling-2027", "--squash", "--delete-branch"]
+REBUILD = ["gh", "workflow", "run", "post-merge.yml", "--repo", "EnzoSim/rolling-2027", "--ref", "main"]
+
+
+def _gh_qui_flanche(commands, *, merge_errors=(), state="OPEN", listed="[]"):
+    """Un faux `gh` : `merge_errors`, les sorties d'erreur des premières fusions, puis le succès."""
+    errors = list(merge_errors)
+
+    def fake_run(command, root, **kwargs):
+        commands.append(command)
+        if command[:3] == ["gh", "pr", "merge"] and errors:
+            return SimpleNamespace(returncode=1, stdout="", stderr=errors.pop(0))
+        if command[:3] == ["gh", "pr", "view"]:
+            return SimpleNamespace(returncode=0, stdout=f'{{"state": "{state}"}}', stderr="")
+        if command[:3] == ["gh", "pr", "list"]:
+            return SimpleNamespace(returncode=0, stdout=listed, stderr="")
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    return fake_run
+
+
+@pytest.fixture
+def pauses(monkeypatch):
+    waited = []
+    monkeypatch.setattr(pull_request, "_sleep", waited.append)
+    return waited
+
+
+def test_un_502_sur_la_fusion_se_retente(monkeypatch, tmp_path, pauses):
+    commands = []
+    monkeypatch.setattr(pull_request, "_run", _gh_qui_flanche(commands, merge_errors=[BAD_GATEWAY]))
+    pull_request.merge_verified("EnzoSim/rolling-2027", 9, tmp_path)
+    assert commands.count(MERGE) == 2
+    assert pauses == [10]
+    assert commands[-1] == REBUILD
+
+
+def test_une_fusion_passee_malgre_le_502_n_est_pas_refaite(monkeypatch, tmp_path, pauses):
+    commands = []
+    monkeypatch.setattr(pull_request, "_run", _gh_qui_flanche(commands, merge_errors=[BAD_GATEWAY], state="MERGED"))
+    pull_request.merge_verified("EnzoSim/rolling-2027", 9, tmp_path)
+    assert commands.count(MERGE) == 1 and pauses == []
+    assert commands[-1] == REBUILD
+
+
+def test_une_erreur_definitive_ne_se_retente_pas(monkeypatch, tmp_path, pauses):
+    commands = []
+    refused = "Pull request #9 is not mergeable: the merge commit cannot be cleanly created."
+    monkeypatch.setattr(pull_request, "_run", _gh_qui_flanche(commands, merge_errors=[refused]))
+    with pytest.raises(pull_request.PullRequestError, match="not mergeable"):
+        pull_request.merge_verified("EnzoSim/rolling-2027", 9, tmp_path)
+    assert commands.count(MERGE) == 1 and pauses == []
+    assert REBUILD not in commands
+
+
+def test_les_essais_ont_une_fin(monkeypatch, tmp_path, pauses):
+    commands = []
+    monkeypatch.setattr(pull_request, "_run", _gh_qui_flanche(commands, merge_errors=[BAD_GATEWAY] * 10))
+    with pytest.raises(pull_request.PullRequestError, match="502"):
+        pull_request.merge_verified("EnzoSim/rolling-2027", 9, tmp_path)
+    assert commands.count(MERGE) == len(pull_request.RETRY_DELAYS) + 1
+    assert pauses == list(pull_request.RETRY_DELAYS)
+
+
+def test_la_fusion_automatique_passe_par_les_essais(monkeypatch, tmp_path, pauses):
+    """create_or_update fusionne avec les mêmes essais : un 502 ne laisse plus la PR ouverte."""
+    commands = []
+    base = _faux_gh(commands)
+    errors = [BAD_GATEWAY]
+
+    def fake_run(command, root, **kwargs):
+        if command[:3] == ["gh", "pr", "merge"] and errors:
+            commands.append(command)
+            return SimpleNamespace(returncode=1, stdout="", stderr=errors.pop(0))
+        if command[:3] == ["gh", "pr", "view"] and command[-1] == "state":
+            commands.append(command)
+            return SimpleNamespace(returncode=0, stdout='{"state": "OPEN"}', stderr="")
+        return base(command, root, **kwargs)
+
+    monkeypatch.setattr(pull_request, "_run", fake_run)
+    monkeypatch.setattr(pull_request, "_validate", lambda root: None)
+    proposal = _proposal()
+    proposal.failures = []
+    result = pull_request.create_or_update(42, "EnzoSim/rolling-2027", proposal, tmp_path, automerge=True)
+    assert result.merged and commands.count(MERGE) == 2 and pauses == [10]
+
+
+def test_une_pr_verifiee_ne_se_dit_pas_brouillon():
+    proposal = _proposal()
+    proposal.failures = []
+    ready = pull_request.body(42, proposal, ["model:free"], 5, ready=True)
+    assert "brouillon" not in ready and "- [ ]" not in ready
+    assert "vérifié automatiquement" in ready and "Closes #42" in ready
+    assert "brouillon" in pull_request.body(42, proposal, ["model:free"], 5)
+
+
+LISTED = """[
+  {"number": 69, "isDraft": false, "headRefName": "mining/issue-68", "labels": [{"name": "automated"}], "mergeable": "MERGEABLE"},
+  {"number": 70, "isDraft": true, "headRefName": "mining/issue-71", "labels": [{"name": "automated"}, {"name": "needs-human-review"}], "mergeable": "MERGEABLE"},
+  {"number": 72, "isDraft": false, "headRefName": "mining/issue-73", "labels": [{"name": "automated"}, {"name": "needs-human-review"}], "mergeable": "MERGEABLE"},
+  {"number": 74, "isDraft": false, "headRefName": "mining/issue-75", "labels": [{"name": "automated"}], "mergeable": "CONFLICTING"},
+  {"number": 76, "isDraft": false, "headRefName": "sync/upstream", "labels": [{"name": "automated"}], "mergeable": "MERGEABLE"},
+  {"number": 66, "isDraft": false, "headRefName": "mining/issue-65", "labels": [{"name": "automated"}], "mergeable": "UNKNOWN"}
+]"""
+
+
+def test_le_rattrapage_ne_prend_que_les_pr_verifiees(monkeypatch, tmp_path, pauses):
+    commands = []
+    monkeypatch.setattr(pull_request, "_run", _gh_qui_flanche(commands, listed=LISTED))
+    assert pull_request.pending_verified("EnzoSim/rolling-2027", tmp_path) == [66, 69]
+    merged, failures = pull_request.catch_up("EnzoSim/rolling-2027", tmp_path)
+    assert merged == [66, 69] and failures == []
+    merges = [c for c in commands if c[:3] == ["gh", "pr", "merge"]]
+    assert [c[3] for c in merges] == ["66", "69"], "jamais un brouillon, une PR à relire, en conflit ou hors mining"
+    assert commands.count(REBUILD) == 1, "post-merge.yml une seule fois, après les fusions"
+
+
+def test_le_rattrapage_continue_apres_un_echec(monkeypatch, tmp_path, pauses):
+    commands = []
+    refused = "Pull request #66 is not mergeable: the base branch policy prohibits the merge."
+    monkeypatch.setattr(pull_request, "_run", _gh_qui_flanche(commands, merge_errors=[refused], listed=LISTED))
+    merged, failures = pull_request.catch_up("EnzoSim/rolling-2027", tmp_path)
+    assert merged == [69]
+    assert failures and failures[0][0] == 66 and "not mergeable" in failures[0][1]
+    assert commands.count(REBUILD) == 1
+
+
+def test_sans_pr_en_attente_rien_ne_part(monkeypatch, tmp_path, pauses):
+    commands = []
+    monkeypatch.setattr(pull_request, "_run", _gh_qui_flanche(commands))
+    assert pull_request.catch_up("EnzoSim/rolling-2027", tmp_path) == ([], [])
+    assert REBUILD not in commands

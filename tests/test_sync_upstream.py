@@ -47,11 +47,13 @@ def test_repeated_failure_recovery_and_recurrence_reuse_one_issue():
 
 
 def test_existing_duplicates_are_closed_without_losing_their_original_diagnostic():
-    client = FakeIssues([
-        {"number": 52, "title": TITLE, "state": "open", "body": "run/original-52"},
-        {"number": 27, "title": TITLE, "state": "open", "body": "run/original-27"},
-        {"number": 29, "title": TITLE, "state": "open", "body": "run/original-29"},
-    ])
+    client = FakeIssues(
+        [
+            {"number": 52, "title": TITLE, "state": "open", "body": "run/original-52"},
+            {"number": 27, "title": TITLE, "state": "open", "body": "run/original-27"},
+            {"number": 29, "title": TITLE, "state": "open", "body": "run/original-29"},
+        ]
+    )
     assert reconcile(client, "success", "run/green") == 27
     assert client.created == 0
     assert all(row["state"] == "closed" for row in client.rows)
@@ -65,11 +67,14 @@ def test_existing_duplicates_are_closed_without_losing_their_original_diagnostic
 def test_rest_pagination_finds_old_alerts_and_excludes_pull_requests():
     client = GitHubIssues("owner/repo", "unused")
     ordinary = [{"number": n, "title": "Other", "body": ""} for n in range(1, 101)]
-    pages = [ordinary, [
-        {"number": 101, "title": TITLE, "body": "", "pull_request": {}},
-        {"number": 102, "title": "Renamed alert", "body": MARKER},
-        {"number": 103, "title": TITLE, "body": ""},
-    ]]
+    pages = [
+        ordinary,
+        [
+            {"number": 101, "title": TITLE, "body": "", "pull_request": {}},
+            {"number": 102, "title": "Renamed alert", "body": MARKER},
+            {"number": 103, "title": TITLE, "body": ""},
+        ],
+    ]
     calls = []
 
     def request(method, suffix):
