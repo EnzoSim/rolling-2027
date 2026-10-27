@@ -1,12 +1,12 @@
 candidat,intentions,erreur_sup,erreur_inf
-Bruno Retailleau,7,,
-David Lisnard,8,,
-Édouard Philippe,17,,
-Fabien Roussel,2,,
-François Hollande,6.5,,
-Jean-Luc Mélenchon,19.5,,
-Marine Le Pen,30.5,,
-Marine Tondelier,2.5,,
-Nathalie Arthaud,0.5,,
-Nicolas Dupont-Aignan,3,,
-Éric Zemmour,3.5,,
+Bruno Retailleau,7,0.94,-0.94
+David Lisnard,8,1.0,-1.0
+Édouard Philippe,17,1.39,-1.39
+Fabien Roussel,2,0.52,-0.52
+François Hollande,6.5,0.91,-0.91
+Jean-Luc Mélenchon,19.5,1.46,-1.46
+Marine Le Pen,30.5,1.7,-1.7
+Marine Tondelier,2.5,0.58,-0.58
+Nathalie Arthaud,0.5,0.26,-0.26
+Nicolas Dupont-Aignan,3,0.63,-0.63
+Éric Zemmour,3.5,0.68,-0.68
