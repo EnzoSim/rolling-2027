@@ -9,7 +9,7 @@ Ce qui change :
 
 | | Mieux Voter | rolling-2027 |
 |---|---|---|
-| Guet du registre de la Commission | une fois par jour (9 h UTC) | toutes les heures, lancé par le serveur de Ballottage ; le cron de GitHub, qui ne passe que toutes les 6 à 9 heures, reste en secours |
+| Guet du registre de la Commission | une fois par jour (9 h UTC) | toutes les heures, lancé par le serveur de Ballottage (le cron de GitHub, qui ne passe que toutes les 6 à 9 heures, reste en secours), sur le catalogue de Mieux Voter, lui-même mis à jour une fois par jour |
 | Lecture des notices par un modèle | modèles gratuits, quotas vite épuisés | Claude Opus 5.5, puis Grok (xAI), puis les modèles gratuits |
 | Publication | PR en brouillon, relue à la main | fusion automatique si chaque chiffre est retrouvé sur sa ligne de la notice et que les tests passent, retentée sur une panne de GitHub puis rattrapée chaque heure (`merge_verified_prs.py`) ; brouillon sinon |
 | Données de l'amont | — | reprises toutes les six heures |
