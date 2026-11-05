@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 import merge
-from scripts.import_upstream import classify, import_tables, main, read_csv, read_tables
+from scripts.import_upstream import Table, classify, import_tables, main, read_csv, read_tables, safe_text
 
 POLL_HEADER = "poll_id,hypothese,nom_institut,commanditaire,debut_enquete,fin_enquete,echantillon,filename"
 LE_PEN = "Marine Le Pen"
@@ -47,6 +47,12 @@ def repos(tmp_path):
         return write_repo(tmp_path / "ours", *ours), write_repo(tmp_path / "theirs", *theirs)
 
     return build
+
+
+def edit(path, old, new):
+    text = path.read_text(encoding="utf-8")
+    assert old in text
+    path.write_text(text.replace(old, new), encoding="utf-8")
 
 
 def plan_of(ours, theirs):
@@ -193,6 +199,90 @@ def test_a_second_run_finds_nothing_and_a_dry_run_writes_nothing(repos, monkeypa
     assert main([str(theirs), "--root", str(ours)]) == 0
     assert output.read_text() == "changed=false\nchanged=true\nchanged=false\n"
     assert len(read_csv(ours / "polls.csv")) == 1
+
+
+def hostile(repos, *, mutate=None):
+    """Un amont avec un sondage absent de chez nous, à abîmer."""
+    poll = ("H1", "ELABE", "2026-11-03", "2026-11-04", {LE_PEN: 60, ATTAL: 40})
+    ours, theirs = repos(
+        ({"H1": [LE_PEN, ATTAL]}, {}),
+        ({"H1": [LE_PEN, ATTAL]}, {"20261103_1104_el_A": poll}),
+    )
+    if mutate:
+        mutate(theirs)
+    return ours, theirs
+
+
+def snapshot(root):
+    return {path: path.read_bytes() for path in sorted(root.rglob("*")) if path.is_file()}
+
+
+def test_an_id_that_leaves_polls_is_refused_before_any_read(repos, tmp_path):
+    def mutate(theirs):
+        edit(theirs / "polls.csv", "20261103_1104_el_A", "../../ours/polls")
+
+    ours, theirs = hostile(repos, mutate=mutate)
+    before = snapshot(ours)
+    with pytest.raises(ValueError, match="Identifiant de sondage refusé"):
+        main([str(theirs), "--root", str(ours)])
+    assert snapshot(ours) == before
+
+
+def test_a_symbolic_link_in_polls_is_refused(repos, tmp_path):
+    secret = tmp_path / "config"
+    secret.write_text("candidat,intentions,erreur_sup,erreur_inf\nMarine Le Pen,60,1,-1\nGabriel Attal,40,1,-1\n")
+
+    def mutate(theirs):
+        path = theirs / "polls/20261103_1104_el_A.csv"
+        path.unlink()
+        path.symlink_to(secret)
+
+    ours, theirs = hostile(repos, mutate=mutate)
+    before = snapshot(ours)
+    with pytest.raises(ValueError, match="lien symbolique"):
+        main([str(theirs), "--root", str(ours)])
+    assert snapshot(ours) == before
+
+
+@pytest.mark.parametrize(
+    "mutate, reason",
+    [
+        (lambda t: edit(t / "polls.csv", ",LCI,", ",=HYPERLINK(1),"), "valeur refusée"),
+        (lambda t: edit(t / "polls.csv", ",ELABE,", ',"ELABE\n::add-mask::x",'), "valeur refusée"),
+        (lambda t: edit(t / "polls.csv", "2026-11-03", "3 novembre"), "dates refusées"),
+        (lambda t: edit(t / "polls.csv", ",1000,", ",mille,"), "échantillon refusé"),
+        (lambda t: edit(t / "polls/20261103_1104_el_A.csv", "60,1.0", "160,1.0"), "hors de 0 à 100"),
+        (lambda t: edit(t / "polls/20261103_1104_el_A.csv", "60,1.0", "60,=1+1"), "chiffre refusé"),
+        (lambda t: edit(t / "polls/20261103_1104_el_A.csv", "erreur_inf", "erreur_inf,pirate"), "colonnes refusées"),
+    ],
+)
+def test_a_hostile_value_stops_the_import_before_any_write(repos, mutate, reason):
+    ours, theirs = hostile(repos, mutate=mutate)
+    before = snapshot(ours)
+    with pytest.raises(ValueError, match=reason):
+        main([str(theirs), "--root", str(ours)])
+    assert snapshot(ours) == before
+
+
+def test_a_file_left_in_polls_is_never_overwritten(repos, tmp_path):
+    ours, theirs = hostile(repos)
+    left = ours / "polls/20261103_1104_el_A.csv"
+    left.write_text("à nous\n")
+    with pytest.raises(ValueError, match="existe déjà"):
+        main([str(theirs), "--root", str(ours)])
+    assert left.read_text() == "à nous\n"
+
+
+def test_upstream_text_cannot_write_a_workflow_command():
+    row = {
+        "poll_id": "20261103_1104_el_A",
+        "nom_institut": "ELABE\n::error::faux",
+        "debut_enquete": "2026-11-03",
+        "fin_enquete": "2026-11-04",
+    }
+    label = Table(row, {}).label()
+    assert "\n" not in label and "::" not in label
+    assert safe_text("a\r\n::add-mask::b") == "a : :add-mask: :b"
 
 
 def test_the_workflow_imports_and_never_merges_upstream():
