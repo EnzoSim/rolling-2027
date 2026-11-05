@@ -13,6 +13,12 @@ jamais à son `poll_id` :
 - absent : il est repris, son hypothèse rattachée à la nôtre de même liste, ou créée à la
   suite de nos numéros.
 
+L'amont est un dépôt tiers, et ce script écrit dans des fichiers publiés avec le droit de
+pousser. Rien de lui n'est donc cru sur parole : un identifiant ne sort jamais de polls/, un
+lien symbolique est refusé, chaque valeur reprise est contrôlée avant la première écriture,
+et rien de lui n'atteint le journal sans être nettoyé. Un refus fait échouer le workflow,
+ce qui ouvre l'alerte, sans rien écrire.
+
 Usage : import_upstream.py <dossier de l'amont> [--root <dépôt>] [--dry-run]
 """
 
@@ -31,6 +37,39 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from merge import _norm, load_candidates, load_hypotheses  # noqa: E402
+
+POLL_ID = re.compile(r"\d{8}_\d{4}_[a-z0-9]+(?:_[0-9A-Z]+)?")
+HYPOTHESIS_ID = re.compile(r"H(?:2_)?\d+")
+CANDIDATE_ID = re.compile(r"[A-Za-z0-9_-]+")
+DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
+NUMBER = re.compile(r"-?\d+(?:\.\d+)?")
+POLL_COLUMNS = ["candidat", "intentions", "erreur_sup", "erreur_inf"]
+FORMULA_START = ("=", "+", "-", "@", "\t", "\r")
+
+
+def safe_text(value) -> str:
+    """Une donnée de l'amont dans le journal : une ligne, et aucune commande d'Actions."""
+    return " ".join(str(value).split()).replace("::", ": :")
+
+
+def check_cells(row: dict, where: str) -> None:
+    """Une valeur reprise ne peut ni casser une ligne, ni être lue comme une formule."""
+    if None in row:
+        raise ValueError(f"{where} : une colonne de trop")
+    for column, value in row.items():
+        text = value or ""
+        if text.startswith(FORMULA_START) or "\n" in text or "\r" in text:
+            raise ValueError(f"{where} : valeur refusée dans {column}")
+
+
+def poll_path(root: Path, poll_id: str) -> Path:
+    """Le fichier d'un sondage, toujours dans polls/, jamais par un lien symbolique."""
+    if not POLL_ID.fullmatch(poll_id):
+        raise ValueError(f"Identifiant de sondage refusé : {poll_id!r}")
+    path = root / "polls" / f"{poll_id}.csv"
+    if path.is_symlink():
+        raise ValueError(f"{poll_id} : lien symbolique refusé")
+    return path
 
 
 @dataclass(frozen=True)
@@ -53,7 +92,7 @@ class Table:
         return (self.row["debut_enquete"].strip(), self.row["fin_enquete"].strip())
 
     def label(self) -> str:
-        return f"{self.poll_id} ({self.row['nom_institut']}, {self.dates[0]} au {self.dates[1]})"
+        return safe_text(f"{self.poll_id} ({self.row['nom_institut']}, {self.dates[0]} au {self.dates[1]})")
 
 
 @dataclass
@@ -79,10 +118,37 @@ def read_shares(path: Path) -> dict:
 
 def read_tables(root: Path) -> list:
     return [
-        Table(row, read_shares(root / "polls" / f"{row['poll_id'].strip()}.csv"))
+        Table(row, read_shares(poll_path(root, row["poll_id"].strip())))
         for row in read_csv(root / "polls.csv")
         if row["poll_id"].strip()
     ]
+
+
+def check_table(table: Table, upstream: Path) -> None:
+    """Tout ce qu'un tableau de l'amont doit tenir pour entrer dans nos fichiers."""
+    where = table.poll_id
+    check_cells(table.row, where)
+    if not all(DATE.fullmatch(date) for date in table.dates):
+        raise ValueError(f"{where} : dates refusées")
+    if not table.row["nom_institut"].strip():
+        raise ValueError(f"{where} : institut vide")
+    if not table.row["echantillon"].strip().isdigit():
+        raise ValueError(f"{where} : échantillon refusé")
+    if not HYPOTHESIS_ID.fullmatch(table.row["hypothese"].strip()):
+        raise ValueError(f"{where} : hypothèse refusée")
+    if not all(0 <= share <= 100 for share in table.shares.values()):
+        raise ValueError(f"{where} : part hors de 0 à 100")
+    with poll_path(upstream, where).open("r", encoding="utf-8", newline="") as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+    if reader.fieldnames != POLL_COLUMNS:
+        raise ValueError(f"{where} : colonnes refusées")
+    for row in rows:
+        if None in row:
+            raise ValueError(f"{where} : une colonne de trop")
+        check_cells({"candidat": row["candidat"]}, where)
+        if not all(NUMBER.fullmatch(row[column].strip()) for column in POLL_COLUMNS[1:] if (row[column] or "").strip()):
+            raise ValueError(f"{where} : chiffre refusé")
 
 
 def classify(ours: list, theirs: list) -> Plan:
@@ -134,8 +200,11 @@ def missing_candidates(root: Path, upstream: Path, tables: list, names_of) -> li
             their_id = their_names.get(name)
             if name in our_names or their_id is None:
                 continue  # Un nom inconnu des deux côtés fera échouer merge.py, et l'alerte partira.
+            if not CANDIDATE_ID.fullmatch(their_id):
+                raise ValueError(f"Identifiant de candidat refusé : {their_id!r}")
             if their_id in ours:
-                raise ValueError(f"Candidat {their_id} : {name} chez l'amont, {ours[their_id].complete_name} ici")
+                raise ValueError(f"Candidat {their_id} : {name!r} chez l'amont, autre personne ici")
+            check_cells(rows[their_id], their_id)
             needed[their_id] = rows[their_id]
     return list(needed.values())
 
@@ -155,11 +224,13 @@ def import_tables(root: Path, upstream: Path, tables: list) -> None:
 
     polls, hypotheses = [], []
     for table in tables:
-        if table.poll_id in our_ids:
+        check_table(table, upstream)
+        if table.poll_id in our_ids or (root / "polls" / f"{table.poll_id}.csv").exists():
             raise ValueError(f"{table.poll_id} existe déjà ici pour un autre sondage")
         their_id = table.row["hypothese"].strip()
         names = frozenset(names_of(table))
         if names not in by_list:
+            check_cells(their_rows[their_id], their_id)
             by_list[names] = next_hypothesis_id(set(by_list.values()), their_id)
             hypotheses.append({**their_rows[their_id], "id_hypothese": by_list[names]})
         polls.append({**table.row, "hypothese": by_list[names]})
@@ -169,7 +240,9 @@ def import_tables(root: Path, upstream: Path, tables: list) -> None:
     append_rows(root / "hypotheses.csv", hypotheses)
     append_rows(root / "polls.csv", polls)
     for table in tables:
-        shutil.copyfile(upstream / "polls" / f"{table.poll_id}.csv", root / "polls" / f"{table.poll_id}.csv")
+        with poll_path(upstream, table.poll_id).open("rb") as source:
+            with (root / "polls" / f"{table.poll_id}.csv").open("xb") as copy:
+                shutil.copyfileobj(source, copy)
 
 
 def main(argv=None) -> int:
