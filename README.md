@@ -12,7 +12,7 @@ Ce qui change :
 | Guet du registre de la Commission | une fois par jour (9 h UTC) | toutes les heures, lancé par le serveur de Ballottage, sur [notre fork du catalogue](https://github.com/EnzoSim/sondages-commission-index), relevé lui aussi chaque heure ; les crons de GitHub, qui ne passent que toutes les 6 à 9 heures, restent en secours |
 | Lecture des notices par un modèle | modèles gratuits, quotas vite épuisés | Claude Opus 5.5, puis Grok (xAI), puis les modèles gratuits |
 | Publication | PR en brouillon, relue à la main | fusion automatique si chaque chiffre est retrouvé sur sa ligne de la notice et que les tests passent, retentée sur une panne de GitHub puis rattrapée chaque heure (`merge_verified_prs.py`) ; brouillon sinon |
-| Données de l'amont | — | reprises toutes les six heures |
+| Données de l'amont | — | sondages absents repris toutes les six heures |
 
 Sans clé d'API, le bot de dépouillement (ou une personne) répond sous l'issue de chaque notice par `/extraction`, `/sans-iv` ou `/sans-resultats` ; le dépôt vérifie chaque chiffre contre la notice et publie seul : voir [docs/BOT.md](docs/BOT.md).
 

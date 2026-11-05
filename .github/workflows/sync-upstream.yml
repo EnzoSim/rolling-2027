@@ -1,7 +1,9 @@
 name: Sync Mieux Voter
 
-# rolling-2027 : reprend les sondages ajoutés en amont (MieuxVoter/presidentielle2027),
-# garde les nôtres, puis régénère les fichiers consolidés. Toutes les six heures.
+# rolling-2027 : reprend de MieuxVoter/presidentielle2027 les sondages que nous n'avons pas
+# (scripts/import_upstream.py), garde les nôtres, puis régénère les fichiers consolidés.
+# Toutes les six heures. Pas de `git merge` : les deux dépôts dépouillent les mêmes notices
+# et ne les rangent pas pareil.
 on:
   schedule:
     - cron: '41 */6 * * *'
@@ -20,54 +22,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
 
-      - name: Fusionner l'amont
-        id: merge
+      - name: Reprendre les sondages absents
+        id: import
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git remote add upstream https://github.com/MieuxVoter/presidentielle2027.git
-          git fetch --quiet upstream main
-          if git merge-base --is-ancestor upstream/main HEAD; then
-            echo "Déjà à jour avec l'amont."
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          if ! git merge --no-edit --no-commit upstream/main; then
-            # Une erreur Git sans conflit (réseau, historique, etc.) reste un échec.
-            test -n "$(git diff --name-only --diff-filter=U)" || exit 1
-          fi
-          # Fichiers générés, README et compteur : les nôtres, recalculés plus bas.
-          for f in presidentielle2027.csv presidentielle2027.json README.md .last_poll_count; do
-            git checkout --ours -- "$f" 2>/dev/null && git add -- "$f" || true
-          done
-          if [ -n "$(git diff --name-only --diff-filter=U)" ]; then
-            echo "::error::Conflits non résolus : $(git diff --name-only --diff-filter=U | tr '\n' ' ')"
-            git merge --abort
-            exit 1
-          fi
-          echo "changed=true" >> "$GITHUB_OUTPUT"
+          git clone --quiet --depth 1 https://github.com/MieuxVoter/presidentielle2027.git "$RUNNER_TEMP/amont"
+          python scripts/import_upstream.py "$RUNNER_TEMP/amont"
 
       - name: Installer les dépendances de vérification
-        if: steps.merge.outputs.changed == 'true'
+        if: steps.import.outputs.changed == 'true'
         run: python -m pip install -r requirements_pytests.txt
 
       - name: Régénérer et pousser
-        if: steps.merge.outputs.changed == 'true'
+        if: steps.import.outputs.changed == 'true'
         run: |
           python compute_confidence_intervals.py
           python merge.py
           python csv_to_json.py
           python update_badge.py
           python update_top_hypotheses.py
-          # Une fusion CSV peut réussir tout en dupliquant des poll_id ou en
-          # associant un résultat à la mauvaise hypothèse : jamais les publier.
+          # Un import peut réussir tout en dupliquant des poll_id ou en associant un
+          # résultat à la mauvaise hypothèse : jamais les publier.
           python -m pytest -q
           git add -A polls polls.csv hypotheses.csv candidats.csv presidentielle2027.csv presidentielle2027.json README.md
           git commit -m "🔄 Reprise de MieuxVoter/presidentielle2027 [skip ci]"
