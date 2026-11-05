@@ -4,8 +4,8 @@ on:
   schedule:
     # Filet de secours : GitHub ne tient pas ce rythme, il lance ce cron toutes les 6 à
     # 9 heures. Le rythme horaire vient du serveur de Ballottage, qui appelle
-    # workflow_dispatch (server/poll-watch.js de EnzoSim/second-tour). Ce guet lit le
-    # catalogue de Mieux Voter, qui ne se met à jour qu'une fois par jour.
+    # workflow_dispatch (server/poll-watch.js de EnzoSim/second-tour), un quart d'heure après
+    # avoir relancé le catalogue, EnzoSim/sondages-commission-index.
     - cron: '17 * * * *'
   workflow_dispatch: # Allow manual trigger
 
