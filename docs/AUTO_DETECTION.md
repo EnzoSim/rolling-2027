@@ -2,7 +2,7 @@
 
 ## Vue d'ensemble
 
-Le repository surveille automatiquement le [catalogue de la Commission des sondages](https://github.com/MieuxVoter/sondages-commission-index) et crée des issues GitHub pour chaque nouveau sondage présidentiel.
+Le repository surveille automatiquement le [catalogue de la Commission des sondages](https://github.com/EnzoSim/sondages-commission-index) et crée des issues GitHub pour chaque nouveau sondage présidentiel.
 
 **Principe:** Un compteur (`.last_poll_count`) suit le nombre de sondages déjà traités. Le workflow compare ce compteur avec le nombre total dans le catalogue et crée des issues pour les nouveaux sondages.
 

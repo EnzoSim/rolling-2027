@@ -22,7 +22,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
-CATALOG_REPO = "MieuxVoter/sondages-commission-index"
+CATALOG_REPO = "EnzoSim/sondages-commission-index"
 CATALOG_URL = f"https://raw.githubusercontent.com/{CATALOG_REPO}/refs/heads/main/notices_catalog.csv"
 CATALOG_REPO_URL = f"https://github.com/{CATALOG_REPO}"
 BLOB_BASE = f"{CATALOG_REPO_URL}/blob/main/"
