@@ -2,9 +2,17 @@ name: Check for New Presidential Polls
 
 on:
   schedule:
-    # rolling-2027 : toutes les heures (Mieux Voter : une fois par jour, à 9 h UTC).
+    # Filet de secours : GitHub ne tient pas ce rythme, il lance ce cron toutes les 6 à
+    # 9 heures. Le rythme horaire vient du serveur de Ballottage, qui appelle
+    # workflow_dispatch (server/poll-watch.js de EnzoSim/second-tour).
     - cron: '17 * * * *'
   workflow_dispatch: # Allow manual trigger
+
+# Le cron et l'appel horaire peuvent tomber ensemble : l'un attend l'autre, pour ne pas
+# ouvrir deux issues pour la même notice ni se disputer .last_poll_count.
+concurrency:
+  group: check-new-polls
+  cancel-in-progress: false
 
 permissions:
   contents: write
