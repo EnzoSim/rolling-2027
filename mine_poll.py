@@ -172,6 +172,11 @@ def preview_proposal(proposal, failures):
         print("⚠️  INCOMPLET — pages non dépouillées (relancer pour compléter) :\n- " + "\n- ".join(proposal.missing))
     if proposal.already_present:
         print("Déjà enregistrés, non reproposés :\n- " + "\n- ".join(proposal.already_present))
+    if proposal.attachments:
+        print(
+            "Notice rattachée aux sondages déjà relevés sans elle :\n- "
+            + "\n- ".join(f"{item['poll_id']} ({item['hypothese']})" for item in proposal.attachments)
+        )
     if failures:
         print("Tableaux écartés :\n- " + "\n- ".join(failures))
     print("-" * 70)
@@ -336,7 +341,7 @@ def main(argv=None):
                         if created.merged:
                             pr_status = (
                                 f"> ✅ Dépouillement complet, vérifié et fusionné : [#{created.number}]({created.url})"
-                                f" — {len(proposal.polls)} tableau(x). Les fichiers consolidés se régénèrent."
+                                f" — {csvio.summary(proposal)}. Les fichiers consolidés se régénèrent."
                             )
                         elif proposal.missing:
                             pr_status = (

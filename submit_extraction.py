@@ -274,8 +274,11 @@ def main(argv=None):
             comment(repo, args.issue, token, message + "\n\nCorrige et renvoie `/extraction` (voir docs/BOT.md).")
         return 1
 
-    summary = ", ".join(f"{poll['poll_id']} ({poll['hypothese']})" for poll in proposal.polls)
-    print(f"✅ {len(proposal.polls)} tableau(x) vérifié(s) : {summary}")
+    summary = ", ".join(
+        [f"{poll['poll_id']} ({poll['hypothese']})" for poll in proposal.polls]
+        + [f"{item['poll_id']} ({item['hypothese']}, notice rattachée)" for item in proposal.attachments]
+    )
+    print(f"✅ {len(proposal.polls) + len(proposal.attachments)} tableau(x) vérifié(s) : {summary}")
     if not args.pr:
         return 0
 
@@ -300,7 +303,8 @@ def main(argv=None):
         return 1
     state = "fusionnée" if created.merged else "ouverte, à relire"
     message = (
-        f"✅ {len(proposal.polls)} tableau(x) vérifié(s) : {summary}. PR [#{created.number}]({created.url}) {state}."
+        f"✅ {len(proposal.polls) + len(proposal.attachments)} tableau(x) vérifié(s) : {summary}."
+        f" PR [#{created.number}]({created.url}) {state}."
     )
     print(message)
     if args.post:
