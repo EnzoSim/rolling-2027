@@ -1,6 +1,6 @@
 # Comment ajouter un nouveau sondage
 
-Ce guide explique comment ajouter un nouveau sondage au projet **presidentielle2027**.
+Ce guide explique comment ajouter un nouveau sondage au projet **rolling-2027**.
 
 ## Structure du projet
 
