@@ -49,6 +49,11 @@ DEFAULT_LIMIT = 5
 REPORT_MARKER = "<!-- poll-report: {url} -->"
 REPORT_MARKER_RE = re.compile(r"<!-- poll-report: (https://[^\s>]+) -->")
 FILE_MARKER = "<!-- poll-file: {name} -->"
+# Ce qui vient du site d'un institut entre dans le corps d'une issue, à côté des marqueurs que
+# lit le dépouillement : un nom ou une adresse qui pourrait en fermer un ou en ouvrir un autre
+# (« --> », « < », une espace) est écarté.
+SAFE_NAME_RE = re.compile(r"[A-Za-z0-9._-]+\.pdf", re.IGNORECASE)
+SAFE_URL_RE = re.compile(r"https://[^\s<>\"]+")
 
 
 @dataclass(frozen=True)
@@ -128,6 +133,8 @@ def dedup_key(institute, name, siblings=()):
 
 def allowed_report_url(url):
     """Un rapport ne se télécharge qu'en https, depuis le site d'un institut guetté."""
+    if not SAFE_URL_RE.fullmatch(url or ""):
+        return False
     parsed = urlparse(url or "")
     host = (parsed.hostname or "").lower()
     return parsed.scheme == "https" and any(host == allowed or host.endswith("." + allowed) for allowed in HOSTS)
@@ -194,7 +201,8 @@ def published(institute, media, today, fetch=fetch_json):
                     continue
                 raise
             if found.get("status") == "publish":
-                return True, found.get("link"), "article publié"
+                link = found.get("link") or ""
+                return True, link if SAFE_URL_RE.fullmatch(link) else None, "article publié"
     day = publication_day(report_name(media.get("source_url", "")))
     if day and day <= today:
         return True, None, f"daté du {day.isoformat()}"
@@ -240,7 +248,7 @@ def find_reports(now, state, fetch=fetch_json, recorded=frozenset(), log=print):
             url = media.get("source_url") or ""
             name = report_name(url)
             title = (media.get("title") or {}).get("rendered", "")
-            if not allowed_report_url(url) or not name.lower().endswith(".pdf"):
+            if not allowed_report_url(url) or not SAFE_NAME_RE.fullmatch(name) or "--" in name:
                 continue
             key = dedup_key(institute, name, siblings)
             if key in state["seen"] or key in queued or name in recorded or not relevant(institute, name, title):

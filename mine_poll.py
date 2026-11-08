@@ -20,7 +20,7 @@ import os
 import sys
 from pathlib import Path
 from urllib.error import HTTPError, URLError
-from urllib.parse import quote
+from urllib.parse import quote, unquote, urlparse
 from urllib.request import Request, urlopen
 
 # Réutilise le catalogue et le client HTTP GitHub déjà écrits pour les issues.
@@ -121,6 +121,10 @@ def issue_text(repo, number, token):
     """Le texte à dépouiller pour une issue : son rapport d'institut s'il en a un, sinon sa notice."""
     report = issue_report_url(repo, number, token)
     if report:
+        # Le rapport et le nom de fichier de l'issue doivent désigner le même PDF.
+        filename = issue_poll_filename(repo, number, token)
+        if unquote(Path(urlparse(report).path).name) != filename:
+            raise NoticeUnavailable(f"le rapport `{report}` ne correspond pas au fichier `{filename}` de l'issue.")
         return report_text_for(report)
     return notice_text_for(issue_poll_filename(repo, number, token))
 

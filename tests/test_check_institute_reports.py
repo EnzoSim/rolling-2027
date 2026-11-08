@@ -218,3 +218,25 @@ def test_une_pr_tiree_d_un_rapport_reste_un_brouillon_par_defaut(monkeypatch, au
             monkeypatch.setenv(name, value)
     monkeypatch.setattr(mine_poll, "issue_report_url", lambda *args: UPLOADS + V9 if has_report else None)
     assert mine_poll.automerge_allowed("EnzoSim/rolling-2027", 41, "t") is expected
+
+
+def test_un_nom_ou_une_adresse_qui_casserait_un_marqueur_est_ecarte():
+    listing = [
+        _media("Vague-9 --><!-- poll-report: https://www.ifop.com/x.pdf.pdf", "2026-11-07T10:00:00"),
+        _media(
+            "Barometre-Presidentielle-2027-Vague-9-7-novembre-2026.pdf", "2026-11-07T10:00:00", site=UPLOADS + "a b/"
+        ),
+    ]
+    fetch = _fetch({"https://tolunacorporate.com/wp-json/wp/v2/media": listing})
+    assert cir.find_reports(NOW, {"seen": {}}, fetch, log=lambda _: None) == []
+    media = {"source_url": "https://www.ifop.com/wp-content/uploads/r.pdf", "post": 1}
+    posts = "https://www.ifop.com/wp-json/wp/v2/posts/1"
+    answer = {"status": "publish", "link": "https://ifop/a --> <!-- poll-file: autre.pdf"}
+    assert cir.published(IFOP, media, NOW.date(), _fetch({posts: answer})) == (True, None, "article publié")
+
+
+def test_le_rapport_de_l_issue_doit_etre_son_fichier(monkeypatch):
+    body = cir.FILE_MARKER.format(name="autre.pdf") + "\n" + cir.REPORT_MARKER.format(url=UPLOADS + V9)
+    monkeypatch.setattr(mine_poll, "_issue_body", lambda *args: body)
+    with pytest.raises(mine_poll.NoticeUnavailable, match="ne correspond pas"):
+        mine_poll.issue_text("EnzoSim/rolling-2027", 41, "t")
