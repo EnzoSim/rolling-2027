@@ -35,7 +35,7 @@ from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
 from check_new_polls import _github_request, trigger_llm_triage
-from mining.notice import USER_AGENT
+from mining.notice import SSL_CONTEXT, USER_AGENT
 
 ROOT = Path(__file__).resolve().parent
 STATE_FILE = ROOT / ".institute_reports.json"
@@ -168,7 +168,7 @@ def publication_day(name):
 
 def fetch_json(url):
     request = Request(url, headers={"Accept": "application/json", "User-Agent": USER_AGENT})
-    with urlopen(request, timeout=TIMEOUT) as response:
+    with urlopen(request, timeout=TIMEOUT, context=SSL_CONTEXT) as response:
         return json.loads(response.read().decode("utf-8"))
 
 

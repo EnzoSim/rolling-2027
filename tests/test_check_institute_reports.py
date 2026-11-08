@@ -240,3 +240,14 @@ def test_le_rapport_de_l_issue_doit_etre_son_fichier(monkeypatch):
     monkeypatch.setattr(mine_poll, "_issue_body", lambda *args: body)
     with pytest.raises(mine_poll.NoticeUnavailable, match="ne correspond pas"):
         mine_poll.issue_text("EnzoSim/rolling-2027", 41, "t")
+
+
+def test_l_intermediaire_que_l_ifop_oublie_complete_la_chaine():
+    from mining import notice
+
+    loaded = [dict(field[0] for field in cert["subject"]) for cert in notice.ssl_context().get_ca_certs()]
+    assert {
+        "countryName": "BE",
+        "organizationName": "GlobalSign nv-sa",
+        "commonName": "GlobalSign GCC R46 OV TLS CA 2025",
+    } in loaded
