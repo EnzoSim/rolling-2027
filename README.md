@@ -1,62 +1,41 @@
 # rolling-2027
+
 ![Sondages agrégés](https://img.shields.io/badge/sondages_agrégés-384-blue)
 
-Les sondages d'intention de vote de la présidentielle 2027, publiés dans l'heure qui suit leur notice à la [Commission des sondages](https://www.commission-des-sondages.fr/).
+**Tous les sondages de la présidentielle 2027, dans l'heure, vérifiés chiffre par chiffre.**
 
-Chaque ligne reste traçable jusqu'à sa notice. Ce dépôt est un fork de [MieuxVoter/presidentielle2027](https://github.com/MieuxVoter/presidentielle2027) (licence MIT), dont il garde le format, les données et la méthode. Merci à Mieux Voter et à ses contributeurs.
+Un flux ouvert, au format de [Mieux Voter](https://github.com/MieuxVoter/presidentielle2027), tenu à jour par des robots. Ils guettent la [Commission des sondages](https://www.commission-des-sondages.fr/) et les sites des instituts, lisent chaque nouveau sondage, et ne publient que ce qu'ils retrouvent mot pour mot dans le document source.
 
-Utilisé par [Ballottage](https://ballottage.com), un jeu gratuit de pronos sur la présidentielle 2027.
+## Le flux
 
-## 📡 Le flux
-
-| Format | Adresse |
+| | Adresse |
 |---|---|
-| JSON | `https://raw.githubusercontent.com/EnzoSim/rolling-2027/refs/heads/main/presidentielle2027.json` |
+| **JSON** | `https://raw.githubusercontent.com/EnzoSim/rolling-2027/refs/heads/main/presidentielle2027.json` |
 | JSON, miroir | `https://cdn.jsdelivr.net/gh/EnzoSim/rolling-2027@main/presidentielle2027.json` |
 | CSV | [presidentielle2027.csv](presidentielle2027.csv) |
 
-Tout l'historique depuis juillet 2024, premier et second tours, au format de Mieux Voter (voir [Format des données](#-format-des-données)) : un outil qui lit leur flux lit celui-ci sans rien changer.
+Premier et second tours, depuis juillet 2024. Un outil qui lit le flux de Mieux Voter lit celui-ci sans rien changer.
 
-## ⏱️ Comment un sondage arrive dans l'heure
+## Comment ça marche
 
-1. **Le catalogue.** [EnzoSim/sondages-commission-index](https://github.com/EnzoSim/sondages-commission-index), un fork du catalogue de Mieux Voter, relit le registre de la Commission à la 32ᵉ minute de chaque heure.
-2. **Le guet.** À la 47ᵉ minute, `check-new-polls.yml` ouvre une issue pour chaque nouvelle notice. Le serveur de Ballottage lance ces deux étapes chaque heure : les crons de GitHub ne passent que toutes les 6 à 9 heures et ne servent plus que de secours.
-3. **Le dépouillement.** Un bot répond sous l'issue par `/extraction` suivi des tableaux de la notice, par `/sans-iv` quand la notice n'a pas d'intention de vote, ou par `/sans-resultats` quand ses chiffres n'y sont pas (voir [docs/BOT.md](docs/BOT.md)). Avec une clé d'API dans les secrets, le dépôt lit aussi les notices lui-même : Claude, puis Grok (xAI), puis les modèles gratuits.
-4. **La vérification.** Quand chaque chiffre est retrouvé sur sa ligne de la notice et que les tests passent, la PR se fusionne seule. En cas de panne de GitHub, elle est retentée, puis rattrapée chaque heure (`merge_verified_prs.py`). Sinon, elle reste en brouillon. Elle reste aussi en brouillon quand une part s'écarte de plus de 20 points de la médiane des autres sondages du même tour (`mining/outliers.py`) : c'est ce qui arrive quand une notice étiquette mal ses propres lignes, comme la notice 10318 d'OpinionWay en octobre 2026 (Le Pen à 4 %, Zemmour à 35 %).
-5. **La publication.** Après la fusion, `post-merge.yml` régénère le CSV, le JSON, le compteur et le TOP 3.
+```mermaid
+flowchart LR
+    I["Sites des instituts<br/>toutes les 20 min"] --> S
+    C["Commission des sondages<br/>toutes les heures"] --> S
+    S["Une issue<br/>par sondage"] --> L["Lecture<br/>du document"]
+    L --> V{"Chaque chiffre<br/>retrouvé ?"}
+    V -- oui --> F["Fusion<br/>automatique"] --> J["Le flux"]
+    V -- non --> H["Brouillon<br/>pour un humain"]
+```
 
-### Avant la notice : les rapports des instituts
+- **Vite.** Un rapport est lu dès que l'institut le publie sur son site, avant même que la Commission mette sa notice en ligne.
+- **Vérifié.** Chaque part est retrouvée sur sa ligne du document, chaque tableau fait 100 %, la vague du jour n'est jamais confondue avec son rappel, et une part très loin des autres sondages bloque la fusion.
+- **Traçable.** Chaque ligne garde le nom de son document. Quand la notice arrive après le rapport, elle se rattache aux mêmes lignes, sans doublon.
 
-La Commission met une notice en ligne de quelques heures à deux jours après la publication du sondage. Toutes les 20 minutes, `check-institute-reports.yml` (`check_institute_reports.py`) lit l'API publique WordPress (`/wp-json/wp/v2/media`) de Toluna Harris Interactive, de l'IFOP (son baromètre de l'élection présidentielle), d'Elabe et de Cluster17, et ouvre une issue pour chaque nouveau rapport d'intentions de vote. Le dépouillement lit alors le rapport à la place de la notice.
+Le détail : [docs/FONCTIONNEMENT.md](docs/FONCTIONNEMENT.md).
 
-- **Un rapport n'est pris qu'une fois public** : son article est publié sur le site de l'institut, ou la date que porte son nom est arrivée. Toluna dépose parfois un rapport avant sa date : il attend son jour.
-- **La vague du jour, jamais son rappel.** Un rapport aligne souvent les deux sur la même ligne (« Mélenchon 19 17 ») : chaque part retenue doit être le premier nombre après le nom du candidat (`mining/columns.py`), sinon la PR reste en brouillon, avec la raison. Avec `ROLLING_REPORT_AUTOMERGE` à `1`, une PR de rapport qui passe ce contrôle et les autres se fusionne seule, par le bot (`/extraction`) comme par le dépouillement du dépôt ; à `0`, elle attend un clic.
-- **Quand la notice arrive**, ses tableaux identiques se rattachent aux mêmes lignes : seule la cellule `filename` reçoit le nom de la notice. D'autres chiffres pour le même sondage ne s'écrivent pas, l'issue le dit. Un rapport arrivé après sa notice n'ajoute rien.
-- `.institute_reports.json` retient les rapports déjà vus.
-
-Toutes les six heures, `sync-upstream.yml` reprend les sondages que Mieux Voter a publiés et que ce dépôt n'a pas encore. `scripts/import_upstream.py` les reconnaît à leur institut, leurs dates et leurs parts. Seules les données sont reprises, jamais le code.
-
-| | Mieux Voter | rolling-2027 |
-|---|---|---|
-| Relevé du registre | une fois par jour (9 h UTC) | toutes les heures |
-| Lecture des notices | modèles gratuits, quotas vite épuisés | un bot, ou Claude puis Grok avec une clé |
-| Publication | PR relue à la main | fusion automatique quand chaque chiffre est vérifié |
-
-### Réglages
-
-Secrets facultatifs (*Settings → Secrets and variables → Actions*) : `ANTHROPIC_API_KEY` et/ou `XAI_API_KEY`. Les clés `OPENROUTER_API_KEY`, `MISTRAL_API_KEY` et `GEMINI_API_KEY` restent en secours. Variables facultatives : `LLM_PROVIDERS` (l'ordre des fournisseurs, par exemple `xai,anthropic`), `XAI_MODELS`, `ANTHROPIC_MODELS`, `ROLLING_AUTOMERGE` (`0` pour relire chaque PR à la main) et `ROLLING_REPORT_AUTOMERGE` (`1` pour fusionner seules les PR tirées d'un rapport d'institut).
-
-## 📊 Données consolidées
-
-Deux fichiers contiennent tous les résultats des sondages consolidés, avec leurs métadonnées :
-
-➡️ [Le fichier CSV des sondages pour l'élection présidentielle 2027](presidentielle2027.csv)
-
-➡️ [Le flux JSON des sondages pour l'élection présidentielle 2027](https://raw.githubusercontent.com/EnzoSim/rolling-2027/refs/heads/main/presidentielle2027.json)
-
-## 🏆 TOP 3 des hypothèses les plus évaluées
-
-Classement des scénarios (hypothèses de candidatures) les plus fréquemment testés par les instituts de sondage. Mis à jour automatiquement.
+<details>
+<summary><b>Les listes les plus testées</b></summary>
 
 <!-- TOP_HYPOTHESES:START -->
 | Rang | Sondages | Candidats (🥇) / Diff vs 🥇 (🥈🥉) |
@@ -68,95 +47,16 @@ Classement des scénarios (hypothèses de candidatures) les plus fréquemment te
 > 🥇 liste complète des candidats (référence). 🥈🥉 diff vs 🥇 : $\textcolor{green}{\text{+ ajouté}}$ en vert, $\textcolor{red}{\text{− retiré}}$ en rouge.
 <!-- TOP_HYPOTHESES:END -->
 
-## 🗂️ Structure du projet
+</details>
 
-```
-rolling-2027/
-├── candidats.csv              # Liste des candidats avec identifiants
-├── hypotheses.csv             # Scénarios avec différentes listes de candidats
-├── polls.csv                  # Métadonnées des sondages
-├── polls/                     # Résultats individuels par sondage
-│   ├── 20240707_0708_hi_A.csv
-│   ├── 20250326_0327_if_A.csv
-│   └── ...
-├── presidentielle2027.csv     # Fichier consolidé (généré automatiquement)
-├── presidentielle2027.json    # Flux JSON (généré automatiquement)
-├── merge.py                   # Script de fusion des données
-├── mining/                    # Lecture et vérification des notices
-├── submit_extraction.py       # Commandes /extraction, /sans-iv, /sans-resultats
-├── merge_verified_prs.py      # Fusion des PR vérifiées
-├── scripts/                   # Reprise de l'amont, collecte des marchés
-└── tests/                     # Suite de tests
-```
+## Contribuer
 
-## ➕ Contribuer
+Pour ajouter un sondage à la main, suivre [COMMENT_AJOUTER_UN_SONDAGE.md](COMMENT_AJOUTER_UN_SONDAGE.md). Pour répondre sous les issues comme le bot, voir [docs/BOT.md](docs/BOT.md). Chaque PR est validée par les tests et `merge.py`.
 
-### Ajouter un nouveau sondage
+## Crédits
 
-Consultez le guide détaillé : **[COMMENT_AJOUTER_UN_SONDAGE.md](COMMENT_AJOUTER_UN_SONDAGE.md)**
+Un fork de [MieuxVoter/presidentielle2027](https://github.com/MieuxVoter/presidentielle2027), dont il garde le format, les données et la méthode : merci à [Mieux Voter](https://mieuxvoter.fr), l'association qui défend le jugement majoritaire, et à ses contributeurs. **[Soutenir Mieux Voter](https://www.paypal.com/donate/?hosted_button_id=QD6U4D323WV4S)**.
 
-En résumé :
-1. Ajoutez une ligne dans `polls.csv` avec les métadonnées
-2. Créez `polls/<poll_id>.csv` avec les résultats
-3. Vérifiez que les candidats existent dans `candidats.csv`
-4. Testez localement avec `pytest` et `python merge.py` (vérification locale avant PR)
-5. Soumettez une Pull Request
+Utilisé par [Ballottage](https://ballottage.com), un jeu gratuit de pronos sur la présidentielle 2027.
 
-### Validation automatique
-
-GitHub Actions valide automatiquement :
-- ✅ Format des fichiers CSV
-- ✅ Cohérence des données
-- ✅ Génération du fichier consolidé
-
-Une fois mergé, `presidentielle2027.csv` est mis à jour automatiquement.
-
-## 📋 Format des données
-
-### candidats.csv
-
-| Colonne | Description |
-|---------|-------------|
-| `candidate_id` | Identifiant court unique (ex: `EP`, `MLP`) |
-| `complete_name` | Nom complet du candidat |
-| `name` | Prénom |
-| `surname` | Nom de famille |
-| `parti` | Parti politique |
-
-### polls.csv
-
-| Colonne | Description |
-|---------|-------------|
-| `poll_id` | Identifiant unique (format: `YYYYMMDD_DDMM_ii_X`) |
-| `hypothese` | Scénario (H1, H2, etc.) |
-| `nom_institut` | Institut de sondage |
-| `commanditaire` | Commanditaire |
-| `debut_enquete` | Date de début (YYYY-MM-DD) |
-| `fin_enquete` | Date de fin (YYYY-MM-DD) |
-| `echantillon` | Taille échantillon |
-| `population` | Description population |
-| `tour` | Tour de scrutin |
-| `filename` | Source (PDF, etc.) |
-
-### polls/<poll_id>.csv
-
-| Colonne | Description |
-|---------|-------------|
-| `candidat` | Nom du candidat |
-| `intentions` | % intentions de vote |
-| `erreur_sup` | Marge erreur supérieure (optionnel) |
-| `erreur_inf` | Marge erreur inférieure (optionnel) |
-
-## 📜 Licence
-
-Ce projet est sous licence [MIT](LICENSE) : © 2025 Mieux Voter, © 2026 Enzo Simier pour les modifications.
-
-## 📈 Hors sondages : les marchés de prédiction
-
-`collect-markets.yml` relève chaque jour à 6 h 43 UTC les cotes de Polymarket et de Kalshi dans [data/markets.json](data/markets.json), séparément, depuis avril. Ces cotes ne sont pas des sondages et ne se mélangent jamais au flux. `scripts/collect-markets.mjs` est la version autonome des lecteurs de marchés de Ballottage (source `546a9b2`, Node 24, sans dépendance npm). Pour le régénérer depuis le dépôt Ballottage : `node_modules/.bin/rolldown scripts/collect-markets.mjs --platform node --format esm --file ../rolling-2027/scripts/collect-markets.mjs`, en gardant le SHA source dans le commentaire en tête du fichier.
-
-## 🗳️ Le projet d'origine
-
-Ce travail part de celui de [Mieux Voter](https://mieuxvoter.fr), l'association qui défend le **jugement majoritaire** : au lieu de choisir un seul candidat, chacun donne son avis sur tous. Mieux Voter compile ces sondages pour les comparer à des sondages au jugement majoritaire.
-
-> 🗳️ **[Soutenir Mieux Voter](https://www.paypal.com/donate/?hosted_button_id=QD6U4D323WV4S)**
+Licence MIT : © 2025 Mieux Voter, © 2026 Enzo Simier pour les modifications.
