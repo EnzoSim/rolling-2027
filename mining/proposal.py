@@ -50,6 +50,8 @@ class Proposal:
     # Lignes déjà là, relevées sans leur notice (`awaits_notice`), aux chiffres identiques :
     # la notice ne fait qu'écrire son nom dans leur cellule `filename` (csvio.attach_notice).
     attachments: list = field(default_factory=list)
+    # « notice » (la Commission) ou « report » (le rapport de l'institut, check_institute_reports.py).
+    source: str = "notice"
 
     def to_dict(self):
         return asdict(self)
@@ -168,7 +170,7 @@ def _same_values(root, poll_id, names, table):
     return not gaps, ", ".join(gaps)
 
 
-def build(filename, methodology, tables, root, missing=()):
+def build(filename, methodology, tables, root, missing=(), source="notice"):
     """Construit une proposition sans écrire un seul octet dans le dépôt.
 
     Une notice déjà (partiellement) dépouillée n'est pas refusée : seules les
@@ -185,15 +187,18 @@ def build(filename, methodology, tables, root, missing=()):
         for row in polls
         if filename and row.get("filename", "").strip() == filename
     }
-    # Les lignes du même sondage relevées sans notice : même institut, mêmes dates de terrain.
-    waiting = {
+    # Le même sondage déjà relevé depuis un autre document : même institut, mêmes dates de
+    # terrain. Une notice se rattache aux lignes qui attendent la leur ; un rapport arrivé après
+    # sa notice n'ajoute rien. Entre deux notices, rien ne change : ce cas reste à part.
+    is_notice = source != "report"
+    same_poll = {
         (row.get("tour", "").strip(), row.get("hypothese", "").strip()): row
         for row in polls
         if _norm(row.get("nom_institut", "")) == _norm(methodology.institute)
         and row.get("debut_enquete", "").strip() == methodology.start
         and row.get("fin_enquete", "").strip() == methodology.end
         and row.get("filename", "").strip() != filename
-        and awaits_notice(row)
+        and (not is_notice or awaits_notice(row))
     }
     divergent = []
     codes = _institute_codes(polls)
@@ -210,7 +215,7 @@ def build(filename, methodology, tables, root, missing=()):
         for identifier, names in hypotheses.items()
     }
     all_hypotheses = set(hypotheses)
-    proposal = Proposal(filename, asdict(methodology), missing=list(missing))
+    proposal = Proposal(filename, asdict(methodology), missing=list(missing), source=source)
     used_ids = {row["poll_id"] for row in polls}
     counters = {}
 
@@ -235,10 +240,11 @@ def build(filename, methodology, tables, root, missing=()):
         if (table.tour, hypothesis) in recorded:
             proposal.already_present.append(f"page {table.page} : {hypothesis} déjà enregistrée pour {filename}")
             continue
-        earlier = waiting.get((table.tour, hypothesis))
+        earlier = same_poll.get((table.tour, hypothesis))
         if earlier:
             same, gaps = _same_values(root, earlier["poll_id"], names, table)
-            if same:
+            source = earlier.get("filename", "").strip() or "sans fichier"
+            if same and is_notice and awaits_notice(earlier):
                 proposal.attachments.append(
                     {
                         "poll_id": earlier["poll_id"],
@@ -248,11 +254,15 @@ def build(filename, methodology, tables, root, missing=()):
                         "previous": earlier.get("filename", "").strip(),
                     }
                 )
+            elif same:
+                proposal.already_present.append(
+                    f"page {table.page} : {hypothesis} déjà enregistrée ({earlier['poll_id']}, {source})"
+                )
             else:
                 # Le même sondage, déjà relevé ailleurs avec d'autres chiffres : rien n'est
                 # écrit, un humain tranche (l'issue le dit).
                 divergent.append(
-                    f"page {table.page} : {hypothesis} déjà relevée sans notice ({earlier['poll_id']}) avec"
+                    f"page {table.page} : {hypothesis} déjà relevée ({earlier['poll_id']}, {source}) avec"
                     f" d'autres chiffres ({gaps})"
                 )
             continue

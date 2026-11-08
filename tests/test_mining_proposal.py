@@ -1,6 +1,7 @@
 """Assemblage et écriture append-only d'une proposition validée."""
 
 import shutil
+from dataclasses import asdict
 from decimal import Decimal
 from pathlib import Path
 
@@ -192,6 +193,22 @@ def test_une_ligne_qui_a_deja_sa_notice_ne_se_rattache_pas(tmp_path):
     csvio.apply(proposal.build(NOTICE, _methodology(), [_table()], tmp_path), tmp_path)
     built = proposal.build("10998-pres-iv-opinionway-autre.pdf", _methodology(), [_table()], tmp_path)
     assert built.attachments == [], "une notice ne remplace jamais une autre notice"
-    forged = proposal.Proposal(NOTICE, built.methodology, attachments=[{"poll_id": "20990909_0910_ow_2A"}])
+    forged = proposal.Proposal(NOTICE, asdict(_methodology()), attachments=[{"poll_id": "20990909_0910_ow_2A"}])
     with pytest.raises(proposal.ProposalError, match="a déjà sa notice"):
         csvio.validate(forged, tmp_path)
+
+
+def test_un_rapport_arrive_apres_sa_notice_n_ajoute_rien(tmp_path):
+    _copy_data(tmp_path)
+    melenchon = _second_tour(5, "Jean-Luc Mélenchon", "Marine Le Pen")
+    csvio.apply(proposal.build(NOTICE, _methodology(), [_table()], tmp_path), tmp_path)
+    original = (tmp_path / "polls.csv").read_bytes()
+    built = proposal.build(REPORT, _methodology(), [_table(), melenchon], tmp_path, source="report")
+    # Le tableau de la notice n'est ni ajouté ni rattaché au rapport ; celui que le rapport
+    # est seul à donner s'ajoute, sous le nom du rapport.
+    assert built.attachments == []
+    assert built.already_present == [f"page 2 : H2_2 déjà enregistrée (20990909_0910_ow_2A, {NOTICE})"]
+    assert [(poll["poll_id"], poll["filename"]) for poll in built.polls] == [("20990909_0910_ow_2B", REPORT)]
+    with pytest.raises(proposal.ProposalError, match="déjà enregistrés"):
+        proposal.build(REPORT, _methodology(), [_table()], tmp_path, source="report")
+    assert (tmp_path / "polls.csv").read_bytes() == original

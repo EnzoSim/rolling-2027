@@ -25,7 +25,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from check_new_polls import _github_request
-from mine_poll import NoticeUnavailable, issue_poll_filename, notice_date, notice_text_for
+from mine_poll import NoticeUnavailable, issue_poll_filename, issue_text, notice_date, notice_text_for
 from mining import csvio, extraction, notice, pull_request, render
 from mining.proposal import ProposalError, build as build_proposal
 
@@ -41,6 +41,7 @@ REPORT_HOSTS = (
     "odoxa.fr",
     "harris-interactive.fr",
     "toluna-group.com",
+    "tolunacorporate.com",
     "opinion-way.com",
     "opinionway.com",
     "elabe.fr",
@@ -264,7 +265,9 @@ def main(argv=None):
     try:
         filename = issue_poll_filename(repo, args.issue, token)
         notice_text = (
-            Path(args.notice_txt).read_text(encoding="utf-8") if args.notice_txt else notice_text_for(filename)
+            Path(args.notice_txt).read_text(encoding="utf-8")
+            if args.notice_txt
+            else issue_text(repo, args.issue, token)
         )
         proposal, report = verify(text, filename, notice_text)
     except (SubmissionError, NoticeUnavailable) as exc:

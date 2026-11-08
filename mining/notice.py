@@ -11,11 +11,14 @@ Stdlib uniquement, sauf le repli PDF qui importe pdfplumber à la demande.
 import re
 from dataclasses import dataclass
 from io import BytesIO
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
 PAGE_RE = re.compile(r"^--- page (\d+) ---\s*$")
 HEADER_RE = re.compile(r"^#\s?(.*)$")
 TIMEOUT = 30
+# Toluna et l'IFOP répondent 403 au User-Agent par défaut de Python (relevé du 8 novembre
+# 2026) ; un nom honnête, avec l'adresse du dépôt, passe partout.
+USER_AGENT = "rolling-2027 (+https://github.com/EnzoSim/rolling-2027)"
 
 
 @dataclass(frozen=True)
@@ -81,7 +84,8 @@ def fetch_text(url):
 
 def pdf_text_from_url(url):
     """Le texte d'un PDF distant, sans écrire de fichier temporaire."""
-    with urlopen(url, timeout=TIMEOUT) as response:
+    request = Request(url, headers={"User-Agent": USER_AGENT})
+    with urlopen(request, timeout=TIMEOUT) as response:
         return extract_pdf_text(BytesIO(response.read()))
 
 
