@@ -20,15 +20,13 @@ Premier et second tours, depuis juillet 2024. Un outil qui lit le flux de Mieux 
 
 ```mermaid
 flowchart LR
-    I["Sites des instituts<br/>toutes les 20 min"] --> S
-    C["Commission des sondages<br/>toutes les heures"] --> S
-    S["Une issue<br/>par sondage"] --> L["Lecture<br/>du document"]
-    L --> V{"Chaque chiffre<br/>retrouvé ?"}
-    V -- oui --> F["Fusion<br/>automatique"] --> J["Le flux"]
-    V -- non --> H["Brouillon<br/>pour un humain"]
+    A[Instituts et Commission] --> B[Une issue par sondage]
+    B --> C{Chiffres retrouvés ?}
+    C -->|oui| D[Le flux]
+    C -->|non| E[Relu par un humain]
 ```
 
-- **Vite.** Un rapport est lu dès que l'institut le publie sur son site, avant même que la Commission mette sa notice en ligne.
+- **Vite.** Les sites des instituts sont lus toutes les 20 minutes, le registre de la Commission toutes les heures : un rapport entre dans le flux dès sa publication, avant même sa notice.
 - **Vérifié.** Chaque part est retrouvée sur sa ligne du document, chaque tableau fait 100 %, la vague du jour n'est jamais confondue avec son rappel, et une part très loin des autres sondages bloque la fusion.
 - **Traçable.** Chaque ligne garde le nom de son document. Quand la notice arrive après le rapport, elle se rattache aux mêmes lignes, sans doublon.
 
