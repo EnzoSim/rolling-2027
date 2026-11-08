@@ -203,12 +203,12 @@ def test_un_rapport_arrive_apres_sa_notice_n_ajoute_rien(tmp_path):
     melenchon = _second_tour(5, "Jean-Luc Mélenchon", "Marine Le Pen")
     csvio.apply(proposal.build(NOTICE, _methodology(), [_table()], tmp_path), tmp_path)
     original = (tmp_path / "polls.csv").read_bytes()
-    built = proposal.build(REPORT, _methodology(), [_table(), melenchon], tmp_path)
+    built = proposal.build(REPORT, _methodology(), [_table(), melenchon], tmp_path, source="report")
     # Le tableau de la notice n'est ni ajouté ni rattaché au rapport ; celui que le rapport
     # est seul à donner s'ajoute, sous le nom du rapport.
     assert built.attachments == []
     assert built.already_present == [f"page 2 : H2_2 déjà enregistrée (20990909_0910_ow_2A, {NOTICE})"]
     assert [(poll["poll_id"], poll["filename"]) for poll in built.polls] == [("20990909_0910_ow_2B", REPORT)]
     with pytest.raises(proposal.ProposalError, match="déjà enregistrés"):
-        proposal.build(REPORT, _methodology(), [_table()], tmp_path)
+        proposal.build(REPORT, _methodology(), [_table()], tmp_path, source="report")
     assert (tmp_path / "polls.csv").read_bytes() == original

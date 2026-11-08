@@ -375,6 +375,7 @@ def main(argv=None):
                         # Un dépouillement incomplet reste proposé : les tableaux
                         # obtenus sont vérifiés, une relance complétera.
                         missing=mined.api_failures,
+                        source="report" if args.issue and issue_report_url(repo, args.issue, token) else "notice",
                     )
                     proposal.failures.extend(mined.failures)
                     preview_proposal(proposal, mined.failures)

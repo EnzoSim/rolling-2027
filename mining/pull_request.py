@@ -14,7 +14,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from mining import outliers
-from mining.proposal import awaits_notice
 
 
 class PullRequestError(RuntimeError):
@@ -223,7 +222,7 @@ def body(issue, proposal, models, calls, ready=False):
     """
     method = proposal.methodology
     lines = ["# Proposition de sondage générée automatiquement", "", f"Closes #{issue}", ""]
-    if awaits_notice({"filename": proposal.filename}):
+    if getattr(proposal, "source", "notice") == "report":
         lines.extend(
             [
                 f"> 📄 Source : le rapport de l'institut (`{_safe(proposal.filename)}`), avant sa notice. Un rapport"

@@ -50,6 +50,8 @@ class Proposal:
     # Lignes déjà là, relevées sans leur notice (`awaits_notice`), aux chiffres identiques :
     # la notice ne fait qu'écrire son nom dans leur cellule `filename` (csvio.attach_notice).
     attachments: list = field(default_factory=list)
+    # « notice » (la Commission) ou « report » (le rapport de l'institut, check_institute_reports.py).
+    source: str = "notice"
 
     def to_dict(self):
         return asdict(self)
@@ -168,7 +170,7 @@ def _same_values(root, poll_id, names, table):
     return not gaps, ", ".join(gaps)
 
 
-def build(filename, methodology, tables, root, missing=()):
+def build(filename, methodology, tables, root, missing=(), source="notice"):
     """Construit une proposition sans écrire un seul octet dans le dépôt.
 
     Une notice déjà (partiellement) dépouillée n'est pas refusée : seules les
@@ -188,7 +190,7 @@ def build(filename, methodology, tables, root, missing=()):
     # Le même sondage déjà relevé depuis un autre document : même institut, mêmes dates de
     # terrain. Une notice se rattache aux lignes qui attendent la leur ; un rapport arrivé après
     # sa notice n'ajoute rien. Entre deux notices, rien ne change : ce cas reste à part.
-    is_notice = not awaits_notice({"filename": filename})
+    is_notice = source != "report"
     same_poll = {
         (row.get("tour", "").strip(), row.get("hypothese", "").strip()): row
         for row in polls
@@ -213,7 +215,7 @@ def build(filename, methodology, tables, root, missing=()):
         for identifier, names in hypotheses.items()
     }
     all_hypotheses = set(hypotheses)
-    proposal = Proposal(filename, asdict(methodology), missing=list(missing))
+    proposal = Proposal(filename, asdict(methodology), missing=list(missing), source=source)
     used_ids = {row["poll_id"] for row in polls}
     counters = {}
 
