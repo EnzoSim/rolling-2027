@@ -125,6 +125,9 @@ jobs:
           # rolling-2027 : un dépouillement complet et sans alerte se fusionne seul ;
           # « 0 » dans la variable ROLLING_AUTOMERGE remet la relecture humaine.
           ROLLING_AUTOMERGE: ${{ vars.ROLLING_AUTOMERGE || '1' }}
+          # Un dépouillement tiré du rapport d'un institut (check_institute_reports.py) reste en
+          # brouillon, à fusionner d'un clic : « 1 » dans ROLLING_REPORT_AUTOMERGE le fusionne seul.
+          ROLLING_REPORT_AUTOMERGE: ${{ vars.ROLLING_REPORT_AUTOMERGE || '0' }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
