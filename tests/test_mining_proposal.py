@@ -191,9 +191,8 @@ def test_d_autres_chiffres_pour_le_meme_sondage_ne_s_ecrivent_pas(tmp_path):
 def test_une_ligne_qui_a_deja_sa_notice_ne_se_rattache_pas(tmp_path):
     _copy_data(tmp_path)
     csvio.apply(proposal.build(NOTICE, _methodology(), [_table()], tmp_path), tmp_path)
-    # Une notice republiée sous une autre adresse : les mêmes chiffres sont déjà là, rien n'est ajouté.
-    with pytest.raises(proposal.ProposalError, match="déjà enregistrés"):
-        proposal.build("10998-pres-iv-opinionway-autre.pdf", _methodology(), [_table()], tmp_path)
+    built = proposal.build("10998-pres-iv-opinionway-autre.pdf", _methodology(), [_table()], tmp_path)
+    assert built.attachments == [], "une notice ne remplace jamais une autre notice"
     forged = proposal.Proposal(NOTICE, asdict(_methodology()), attachments=[{"poll_id": "20990909_0910_ow_2A"}])
     with pytest.raises(proposal.ProposalError, match="a déjà sa notice"):
         csvio.validate(forged, tmp_path)

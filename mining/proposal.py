@@ -187,7 +187,7 @@ def build(filename, methodology, tables, root, missing=()):
     }
     # Le même sondage déjà relevé depuis un autre document : même institut, mêmes dates de
     # terrain. Une notice se rattache aux lignes qui attendent la leur ; un rapport arrivé après
-    # sa notice, ou une notice republiée sous une autre adresse, n'ajoute rien.
+    # sa notice n'ajoute rien. Entre deux notices, rien ne change : ce cas reste à part.
     is_notice = not awaits_notice({"filename": filename})
     same_poll = {
         (row.get("tour", "").strip(), row.get("hypothese", "").strip()): row
@@ -196,6 +196,7 @@ def build(filename, methodology, tables, root, missing=()):
         and row.get("debut_enquete", "").strip() == methodology.start
         and row.get("fin_enquete", "").strip() == methodology.end
         and row.get("filename", "").strip() != filename
+        and (not is_notice or awaits_notice(row))
     }
     divergent = []
     codes = _institute_codes(polls)
