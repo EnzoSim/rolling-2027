@@ -9,8 +9,10 @@ Stdlib uniquement, sauf le repli PDF qui importe pdfplumber à la demande.
 """
 
 import re
+import ssl
 from dataclasses import dataclass
 from io import BytesIO
+from pathlib import Path
 from urllib.request import Request, urlopen
 
 PAGE_RE = re.compile(r"^--- page (\d+) ---\s*$")
@@ -19,6 +21,24 @@ TIMEOUT = 30
 # Toluna et l'IFOP répondent 403 au User-Agent par défaut de Python (relevé du 8 novembre
 # 2026) ; un nom honnête, avec l'adresse du dépôt, passe partout.
 USER_AGENT = "rolling-2027 (+https://github.com/EnzoSim/rolling-2027)"
+# Certificats intermédiaires que certains sites d'instituts oublient d'envoyer. Le serveur de
+# l'IFOP envoie l'ancien « GlobalSign RSA OV SSL CA 2018 » au lieu du « GlobalSign GCC R46 OV TLS
+# CA 2025 » qui a signé son certificat (relevé du 8 novembre 2026) ; un navigateur va le chercher
+# seul, Python non. Celui-ci vient de GlobalSign (secure.globalsign.com/cacert/
+# gsgccr46ovtlsca2025.crt, SHA-256 D1:60:E2:DE:…:40:63:F9, valable jusqu'au 23 juin 2029) : il
+# complète la chaîne, qui doit toujours remonter à une racine du système (GlobalSign Root R46).
+CERTS_DIR = Path(__file__).resolve().parent / "certs"
+
+
+def ssl_context():
+    """Le contexte TLS par défaut, plus les intermédiaires de mining/certs."""
+    context = ssl.create_default_context()
+    for pem in sorted(CERTS_DIR.glob("*.pem")):
+        context.load_verify_locations(cadata=pem.read_text(encoding="ascii"))
+    return context
+
+
+SSL_CONTEXT = ssl_context()
 
 
 @dataclass(frozen=True)
@@ -85,7 +105,7 @@ def fetch_text(url):
 def pdf_text_from_url(url):
     """Le texte d'un PDF distant, sans écrire de fichier temporaire."""
     request = Request(url, headers={"User-Agent": USER_AGENT})
-    with urlopen(request, timeout=TIMEOUT) as response:
+    with urlopen(request, timeout=TIMEOUT, context=SSL_CONTEXT) as response:
         return extract_pdf_text(BytesIO(response.read()))
 
 
