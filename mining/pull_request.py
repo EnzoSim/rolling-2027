@@ -13,6 +13,8 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
+from mining import outliers
+
 
 class PullRequestError(RuntimeError):
     """Une branche ou une PR n'a pas pu être créée ; la cause est publiable."""
@@ -202,6 +204,11 @@ def prepare_branch(issue, root):
     return branch
 
 
+def _pct(value):
+    """Une part à la française : 6,5 et non 6.5, 35 et non 35.0."""
+    return f"{value:g}".replace(".", ",")
+
+
 def _safe(text):
     """Le texte issu du modèle reste du texte, pas du Markdown exécutable."""
     return str(text or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("```", "'''")
@@ -245,6 +252,26 @@ def body(issue, proposal, models, calls, ready=False):
             ]
         )
         lines.extend(f"- {_safe(item)}" for item in proposal.missing)
+        lines.append("")
+    far = getattr(proposal, "outliers", None) or []
+    if far:
+        lines.extend(
+            [
+                "## ⚠️ Parts très loin des autres sondages",
+                "",
+                "Chaque chiffre est bien sur sa ligne de la notice, mais ces parts s'écartent de plus de"
+                f" {outliers.OUTLIER_POINTS} points de la médiane des autres sondages (même tour, à"
+                f" {outliers.WINDOW_DAYS} jours, le plus récent de chaque institut). La notice a peut-être mal"
+                " étiqueté ses lignes, comme la notice 10318 d'OpinionWay en octobre 2026 : vérifier le PDF avant"
+                " de fusionner.",
+                "",
+            ]
+        )
+        lines.extend(
+            f"- `{item.poll_id}` : {_safe(item.candidat)} à {_pct(item.value)} %, contre une médiane de"
+            f" {_pct(item.median)} % sur {item.polls} sondages"
+            for item in far
+        )
         lines.append("")
     if proposal.candidates:
         lines.extend(["## Candidats à ajouter", ""])
@@ -357,9 +384,10 @@ def can_automerge(proposal):
 
     Chaque chiffre a déjà été retrouvé sur sa ligne de la notice (extraction.py), et
     `_validate` vient de faire passer pytest et merge.py. Une page non dépouillée ou
-    une alerte de l'extraction laissent la PR en brouillon, pour une relecture humaine.
+    une alerte de l'extraction laissent la PR en brouillon, pour une relecture humaine, comme
+    une part très loin des autres sondages (`outliers.find`, posé par `create_or_update`).
     """
-    return not proposal.missing and not getattr(proposal, "failures", None)
+    return not proposal.missing and not getattr(proposal, "failures", None) and not getattr(proposal, "outliers", None)
 
 
 def create_or_update(issue, repo, proposal, root, models=(), calls=0, automerge=False):
@@ -370,6 +398,9 @@ def create_or_update(issue, repo, proposal, root, models=(), calls=0, automerge=
     relancé (une fusion faite avec GITHUB_TOKEN ne déclenche aucun workflow).
     """
     root = Path(root)
+    # Les fichiers de la proposition sont déjà écrits : `find` les écarte et compare chaque
+    # part aux sondages publiés avant elle.
+    proposal.outliers = outliers.find(proposal, root)
     ready = automerge and can_automerge(proposal)
     branch = branch_name(issue)
     _validate(root)

@@ -341,3 +341,41 @@ def test_sans_pr_en_attente_rien_ne_part(monkeypatch, tmp_path, pauses):
     monkeypatch.setattr(pull_request, "_run", _gh_qui_flanche(commands))
     assert pull_request.catch_up("EnzoSim/rolling-2027", tmp_path) == ([], [])
     assert REBUILD not in commands
+
+
+# --- rolling-2027 : une part très loin des autres sondages garde la PR en brouillon ---
+
+
+def test_une_part_tres_loin_des_sondages_bloque_la_fusion(monkeypatch, tmp_path):
+    from mining import outliers
+
+    commands = []
+    monkeypatch.setattr(pull_request, "_run", _faux_gh(commands))
+    monkeypatch.setattr(pull_request, "_validate", lambda root: None)
+    far = outliers.Outlier("20260909_0910_ow_A", "Marine Le Pen", 4.0, 34.5, 8)
+    monkeypatch.setattr(outliers, "find", lambda proposal, root: [far])
+    proposal = _proposal()
+    proposal.failures = []
+    result = pull_request.create_or_update(42, "EnzoSim/rolling-2027", proposal, tmp_path, automerge=True)
+    create = next(c for c in commands if c[:3] == ["gh", "pr", "create"])
+    assert "--draft" in create
+    assert not any(c[:3] == ["gh", "pr", "merge"] for c in commands)
+    assert not result.merged
+    content = create[create.index("--body") + 1]
+    assert "## ⚠️ Parts très loin des autres sondages" in content
+    assert "Marine Le Pen à 4 %, contre une médiane de 34,5 % sur 8 sondages" in content
+
+
+def test_sans_part_aberrante_la_fusion_reste_automatique(monkeypatch, tmp_path):
+    from mining import outliers
+
+    commands = []
+    monkeypatch.setattr(pull_request, "_run", _faux_gh(commands))
+    monkeypatch.setattr(pull_request, "_validate", lambda root: None)
+    monkeypatch.setattr(outliers, "find", lambda proposal, root: [])
+    proposal = _proposal()
+    proposal.failures = []
+    result = pull_request.create_or_update(42, "EnzoSim/rolling-2027", proposal, tmp_path, automerge=True)
+    assert result.merged
+    create = next(c for c in commands if c[:3] == ["gh", "pr", "create"])
+    assert "Parts très loin" not in create[create.index("--body") + 1]
