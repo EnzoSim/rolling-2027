@@ -13,6 +13,21 @@ class ProposalError(ValueError):
     """Une proposition ne peut pas être ajoutée sans ambiguïté au dépôt."""
 
 
+# Le nom d'un fichier de la Commission des sondages : son numéro de notice, une lettre parfois,
+# puis un tiret (« 10351-pres-iv-ifop-lci-3-novembre.pdf », « 10166a-pres-… », « 9942-p-… »).
+NOTICE_RE = re.compile(r"^\d{4,5}[a-z]?-", re.IGNORECASE)
+
+
+def awaits_notice(row):
+    """Une ligne relevée sans sa notice : `filename` vide, ou le rapport de l'institut.
+
+    C'est le cas d'un sondage ajouté depuis le PDF de l'institut avant que la Commission
+    publie sa notice. Quand la notice arrive, ses tableaux identiques s'y rattachent au
+    lieu d'être ajoutés une seconde fois sous d'autres lettres.
+    """
+    return not NOTICE_RE.match(row.get("filename", "").strip())
+
+
 @dataclass
 class Proposal:
     """Objet sérialisable, commun à l'aperçu, add_poll.py et la future PR."""
@@ -32,6 +47,9 @@ class Proposal:
     already_present: list = field(default_factory=list)
     # Parts très loin des autres sondages (mining/outliers.py) : la PR reste en brouillon.
     outliers: list = field(default_factory=list)
+    # Lignes déjà là, relevées sans leur notice (`awaits_notice`), aux chiffres identiques :
+    # la notice ne fait qu'écrire son nom dans leur cellule `filename` (csvio.attach_notice).
+    attachments: list = field(default_factory=list)
 
     def to_dict(self):
         return asdict(self)
@@ -127,6 +145,29 @@ def _samples_for_metadata(methodology, table):
     return fields
 
 
+def _same_values(root, poll_id, names, table):
+    """Les parts d'un fichier polls/<id>.csv, comparées candidat par candidat au tableau."""
+    path = Path(root) / "polls" / f"{poll_id}.csv"
+    if not path.exists():
+        return False, "fichier de résultats absent"
+    stored = {}
+    for row in _read_rows(path):
+        value = row.get("intentions", "").strip()
+        stored[_norm(row.get("candidat", ""))] = value.replace(",", ".")
+    extracted = {_norm(name): value.as_csv().replace(",", ".") for name, value in zip(names, table.values)}
+    if set(stored) != set(extracted):
+        return False, "candidats différents"
+    gaps = []
+    for key, value in extracted.items():
+        try:
+            same = float(stored[key]) == float(value)
+        except ValueError:
+            same = stored[key] == value
+        if not same:
+            gaps.append(f"{key} {stored[key]} contre {value}")
+    return not gaps, ", ".join(gaps)
+
+
 def build(filename, methodology, tables, root, missing=()):
     """Construit une proposition sans écrire un seul octet dans le dépôt.
 
@@ -137,11 +178,24 @@ def build(filename, methodology, tables, root, missing=()):
     """
     root = Path(root)
     polls = _read_rows(root / "polls.csv")
+    # Sans nom de fichier, rien n'est « déjà enregistré » : toutes les lignes sans fichier
+    # (relevées depuis un rapport) ne sont pas ce document-là.
     recorded = {
         (row.get("tour", "").strip(), row.get("hypothese", "").strip())
         for row in polls
-        if row.get("filename", "").strip() == filename
+        if filename and row.get("filename", "").strip() == filename
     }
+    # Les lignes du même sondage relevées sans notice : même institut, mêmes dates de terrain.
+    waiting = {
+        (row.get("tour", "").strip(), row.get("hypothese", "").strip()): row
+        for row in polls
+        if _norm(row.get("nom_institut", "")) == _norm(methodology.institute)
+        and row.get("debut_enquete", "").strip() == methodology.start
+        and row.get("fin_enquete", "").strip() == methodology.end
+        and row.get("filename", "").strip() != filename
+        and awaits_notice(row)
+    }
+    divergent = []
     codes = _institute_codes(polls)
     code = codes.get(methodology.institute)
     if not code:
@@ -181,6 +235,27 @@ def build(filename, methodology, tables, root, missing=()):
         if (table.tour, hypothesis) in recorded:
             proposal.already_present.append(f"page {table.page} : {hypothesis} déjà enregistrée pour {filename}")
             continue
+        earlier = waiting.get((table.tour, hypothesis))
+        if earlier:
+            same, gaps = _same_values(root, earlier["poll_id"], names, table)
+            if same:
+                proposal.attachments.append(
+                    {
+                        "poll_id": earlier["poll_id"],
+                        "hypothese": hypothesis,
+                        "tour": table.tour,
+                        "page": table.page,
+                        "previous": earlier.get("filename", "").strip(),
+                    }
+                )
+            else:
+                # Le même sondage, déjà relevé ailleurs avec d'autres chiffres : rien n'est
+                # écrit, un humain tranche (l'issue le dit).
+                divergent.append(
+                    f"page {table.page} : {hypothesis} déjà relevée sans notice ({earlier['poll_id']}) avec"
+                    f" d'autres chiffres ({gaps})"
+                )
+            continue
         poll_id = _next_poll_id(methodology.start, methodology.end, code, table.tour, used_ids, counters)
         metadata = {
             "poll_id": poll_id,
@@ -210,7 +285,10 @@ def build(filename, methodology, tables, root, missing=()):
                 for name, value in zip(names, table.values)
             ],
         }
-    if not proposal.polls:
+    proposal.failures.extend(divergent)
+    if not proposal.polls and not proposal.attachments:
+        if divergent:
+            raise ProposalError("; ".join(divergent))
         if proposal.already_present:
             raise ProposalError(f"tous les tableaux extraits sont déjà enregistrés pour {filename}")
         raise ProposalError("aucun tableau validé : aucune proposition à écrire")

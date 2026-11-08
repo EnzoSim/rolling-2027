@@ -3,13 +3,18 @@
 Ce module ne régénère jamais un CSV complet : les lignes existantes conservent
 leurs octets. C'est important pour les revues de PR et évite qu'un bot reformate
 des années de données à l'occasion d'un seul ajout.
+
+Seule exception, bornée : une notice qui arrive après le rapport de l'institut écrit
+son nom dans la cellule `filename` des lignes du même sondage (`attach_notice`) ;
+aucun autre octet de polls.csv ne bouge.
 """
 
 import csv
+import io
 from pathlib import Path
 
 from merge import _norm
-from mining.proposal import Proposal, ProposalError
+from mining.proposal import Proposal, ProposalError, awaits_notice
 
 POLL_FIELDS = [
     "poll_id",
@@ -74,6 +79,46 @@ def append_rows(path, rows):
         writer.writerows(rows)
 
 
+def _line(fields, row):
+    buffer = io.StringIO()
+    csv.DictWriter(buffer, fieldnames=fields, quoting=csv.QUOTE_MINIMAL, lineterminator="\n").writerow(row)
+    return buffer.getvalue()
+
+
+def attach_notice(path, poll_ids, filename):
+    """Écrit `filename` dans la cellule `filename` des lignes `poll_ids`, et rien d'autre.
+
+    Chaque ligne visée doit se réécrire à l'identique avant le changement : sinon (guillemets
+    inhabituels, ligne sur plusieurs lignes physiques) on refuse plutôt que de reformater.
+    """
+    path = Path(path)
+    targets = set(poll_ids)
+    if not targets:
+        return
+    text = path.read_text(encoding="utf-8")
+    lines = text.splitlines(keepends=True)
+    fields = next(csv.reader([lines[0]]))
+    if "filename" not in fields or "poll_id" not in fields:
+        raise ProposalError(f"{path.name} n'a pas les colonnes poll_id et filename")
+    done = set()
+    for index, physical in enumerate(lines[1:], 1):
+        records = list(csv.reader([physical]))
+        if len(records) != 1:
+            continue
+        row = dict(zip(fields, records[0]))
+        if row.get("poll_id") not in targets:
+            continue
+        ending = "\n" if physical.endswith("\n") else ""
+        if _line(fields, row) != physical.rstrip("\r\n") + "\n":
+            raise ProposalError(f"la ligne {row['poll_id']} ne se réécrit pas à l'identique : rien n'est changé")
+        row["filename"] = filename
+        lines[index] = _line(fields, row)[:-1] + ending
+        done.add(row["poll_id"])
+    if done != targets:
+        raise ProposalError(f"lignes introuvables dans {path.name} : {', '.join(sorted(targets - done))}")
+    path.write_text("".join(lines), encoding="utf-8", newline="")
+
+
 def _named_rows(path, field):
     with Path(path).open(encoding="utf-8", newline="") as handle:
         return list(csv.DictReader(handle)), field
@@ -104,6 +149,16 @@ def validate(proposal, root):
     poll_ids = [row.get("poll_id") for row in proposal.polls]
     if len(poll_ids) != len(set(poll_ids)) or set(poll_ids) & existing_polls:
         raise ProposalError("un poll_id de la proposition existe déjà")
+    by_id = {row["poll_id"]: row for row in poll_rows}
+    attached = [item.get("poll_id") for item in proposal.attachments]
+    if len(attached) != len(set(attached)) or set(attached) & set(poll_ids):
+        raise ProposalError("une ligne est rattachée deux fois à la notice")
+    for poll_id in attached:
+        row = by_id.get(poll_id)
+        if row is None:
+            raise ProposalError(f"ligne à rattacher introuvable : {poll_id}")
+        if not awaits_notice(row):
+            raise ProposalError(f"{poll_id} a déjà sa notice ({row['filename']})")
     if set(proposal.results) != set(poll_ids):
         raise ProposalError("chaque ligne polls.csv doit avoir exactement un fichier de résultats")
     for poll_id in poll_ids:
@@ -150,6 +205,7 @@ def apply(proposal, root):
     append_rows(root / "candidats.csv", proposal.candidates)
     append_rows(root / "hypotheses.csv", proposal.hypotheses)
     append_rows(root / "polls.csv", proposal.polls)
+    attach_notice(root / "polls.csv", [item["poll_id"] for item in proposal.attachments], proposal.filename)
     for poll_id, rows in proposal.results.items():
         with (root / "polls" / f"{poll_id}.csv").open("x", encoding="utf-8", newline="") as handle:
             writer = csv.DictWriter(handle, fieldnames=RESULT_FIELDS, quoting=csv.QUOTE_MINIMAL, lineterminator="\n")
@@ -159,7 +215,10 @@ def apply(proposal, root):
 
 
 def summary(proposal):
-    return (
+    text = (
         f"{len(proposal.polls)} sondage(s), {len(proposal.hypotheses)} hypothèse(s) nouvelle(s), "
         f"{len(proposal.candidates)} candidat(s) nouveau(x)"
     )
+    if proposal.attachments:
+        text += f", notice rattachée à {len(proposal.attachments)} sondage(s) déjà relevé(s)"
+    return text

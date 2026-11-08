@@ -296,7 +296,25 @@ def body(issue, proposal, models, calls, ready=False):
     if method.get("source_registered"):
         lines.append(f"- Inscrits : {_safe(method['source_registered'])}")
     lines.extend(["", "</details>", ""])
-    lines.extend(["## Tableaux proposés", ""])
+    attached = getattr(proposal, "attachments", None) or []
+    if attached:
+        lines.extend(
+            [
+                "## Notice rattachée aux sondages déjà relevés",
+                "",
+                "Ces tableaux étaient déjà dans le dépôt, relevés sans leur notice (depuis le rapport de l'institut) ;"
+                " la notice donne exactement les mêmes chiffres. Seule leur cellule `filename` change.",
+                "",
+            ]
+        )
+        lines.extend(
+            f"- `{item['poll_id']}` — {item['tour']} · `{item['hypothese']}` · page {item['page']}"
+            f" · avant : {_safe(item['previous']) or 'sans fichier'}"
+            for item in attached
+        )
+        lines.append("")
+    if proposal.polls:
+        lines.extend(["## Tableaux proposés", ""])
     new_hypotheses = {row["id_hypothese"] for row in proposal.hypotheses}
     for poll in proposal.polls:
         evidence = proposal.evidence.get(poll["poll_id"], {})
@@ -413,7 +431,12 @@ def create_or_update(issue, repo, proposal, root, models=(), calls=0, automerge=
         raise PullRequestError("aucune donnée nouvelle à committer")
     _run(["git", "config", "user.name", "github-actions[bot]"], root)
     _run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"], root)
-    _run(["git", "commit", "-m", f"🤖 Ajout sondage depuis l'issue #{issue}"], root)
+    message = (
+        f"🤖 Ajout sondage depuis l'issue #{issue}"
+        if proposal.polls
+        else f"🤖 Notice rattachée depuis l'issue #{issue}"
+    )
+    _run(["git", "commit", "-m", message], root)
     _run(["git", "push", "--force-with-lease", "--set-upstream", "origin", branch], root)
 
     content = body(issue, proposal, models, calls, ready=ready)
