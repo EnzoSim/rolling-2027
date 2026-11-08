@@ -1,4 +1,4 @@
-# Contribuer à presidentielle2027
+# Contribuer à rolling-2027
 
 Merci de contribuer au dépôt.
 
