@@ -30,6 +30,8 @@ class Proposal:
     missing: list = field(default_factory=list)
     # Tableaux écartés parce que leur hypothèse est déjà enregistrée pour ce PDF.
     already_present: list = field(default_factory=list)
+    # Parts très loin des autres sondages (mining/outliers.py) : la PR reste en brouillon.
+    outliers: list = field(default_factory=list)
 
     def to_dict(self):
         return asdict(self)
