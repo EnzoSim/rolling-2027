@@ -114,6 +114,7 @@ def _publier(monkeypatch, tmp_path, post, created=None, failure=None):
         se, "_github_request", lambda url, token, method="GET", payload=None: calls.append((url, method, payload))
     )
     monkeypatch.setattr(se, "issue_poll_filename", lambda *args: "essai-bot.pdf")
+    monkeypatch.setattr(se, "issue_report_url", lambda *args: None)
     monkeypatch.setattr(se.pull_request, "prepare_branch", lambda *args: None)
     monkeypatch.setattr(se.csvio, "apply", lambda *args: None)
 
@@ -232,3 +233,58 @@ def test_un_effectif_ecrit_nulle_part_est_refuse():
     faux = [line.replace("= 7599", "= 7600") for line in TABLEAU_12]
     with pytest.raises(se.SubmissionError, match="page 12, tableau 1 : l'effectif 7600"):
         se.check_tables(RAPPORT, {12: faux}, _candidats(), se.base_pages(RAPPORT, TERRAIN))
+
+
+# Une issue du guet des rapports d'instituts (check_institute_reports.py), dépouillée par le bot.
+
+RAPPORT = "https://tolunacorporate.com/wp-content/uploads/2026/11/Rapport-Toluna-Vague-9.pdf"
+
+
+def test_un_rapport_arrive_apres_sa_notice_n_ajoute_rien():
+    """Le sondage de la notice 10314 est déjà là : relu depuis un rapport, il n'est pas reproposé."""
+    with pytest.raises(se.SubmissionError, match="déjà enregistr"):
+        se.verify(METHODOLOGY + PAGE_9, "Rapport-IFOP-LCI.pdf", NOTICE, source="report")
+
+
+def _publier_un_rapport(monkeypatch, tmp_path, env):
+    seen = {}
+    monkeypatch.setattr(se, "_github_request", lambda *args, **kwargs: None)
+    monkeypatch.setattr(se, "issue_poll_filename", lambda *args: "Rapport-Toluna-Vague-9.pdf")
+    monkeypatch.setattr(se, "issue_report_url", lambda *args: RAPPORT)
+    monkeypatch.setattr(se, "issue_text", lambda *args: "--- page 1 ---\nrapport")
+    proposal = SimpleNamespace(polls=[{"poll_id": "20261103_1105_hi_A", "hypothese": "H123"}], attachments=[])
+
+    def verify(text, filename, notice_text, source="notice"):
+        seen["source"] = source
+        return proposal, None
+
+    monkeypatch.setattr(se, "verify", verify)
+    monkeypatch.setattr(se.pull_request, "prepare_branch", lambda *args: None)
+    monkeypatch.setattr(se.csvio, "apply", lambda *args: None)
+
+    def create_or_update(*args, **kwargs):
+        seen["automerge"] = kwargs["automerge"]
+        return _pr(merged=kwargs["automerge"])
+
+    monkeypatch.setattr(se.pull_request, "create_or_update", create_or_update)
+    monkeypatch.setenv("GITHUB_REPOSITORY", "EnzoSim/rolling-2027")
+    for name in ("ROLLING_AUTOMERGE", "ROLLING_REPORT_AUTOMERGE"):
+        monkeypatch.delenv(name, raising=False)
+    for name, value in env.items():
+        monkeypatch.setenv(name, value)
+    depouillement = tmp_path / "extraction.txt"
+    depouillement.write_text(METHODOLOGY + PAGE_9, encoding="utf-8")
+    assert se.main(["--issue", "41", "--input", str(depouillement), "--pr"]) == 0
+    return seen
+
+
+def test_un_rapport_se_depouille_comme_un_rapport_et_attend_son_feu_vert(monkeypatch, tmp_path):
+    seen = _publier_un_rapport(monkeypatch, tmp_path, {"ROLLING_AUTOMERGE": "1"})
+    assert seen == {"source": "report", "automerge": False}, "sans ROLLING_REPORT_AUTOMERGE, un brouillon"
+
+
+def test_avec_ROLLING_REPORT_AUTOMERGE_un_rapport_se_fusionne_seul(monkeypatch, tmp_path):
+    seen = _publier_un_rapport(monkeypatch, tmp_path, {"ROLLING_AUTOMERGE": "1", "ROLLING_REPORT_AUTOMERGE": "1"})
+    assert seen == {"source": "report", "automerge": True}
+    seen = _publier_un_rapport(monkeypatch, tmp_path, {"ROLLING_AUTOMERGE": "0", "ROLLING_REPORT_AUTOMERGE": "1"})
+    assert seen["automerge"] is False, "ROLLING_AUTOMERGE à 0 coupe tout"

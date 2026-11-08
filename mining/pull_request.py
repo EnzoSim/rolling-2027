@@ -13,7 +13,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-from mining import outliers
+from mining import columns, outliers
 
 
 class PullRequestError(RuntimeError):
@@ -262,6 +262,19 @@ def body(issue, proposal, models, calls, ready=False):
         )
         lines.extend(f"- {_safe(item)}" for item in proposal.missing)
         lines.append("")
+    doubtful = getattr(proposal, "columns", None) or []
+    if doubtful:
+        lines.extend(
+            [
+                "## ⚠️ Vague du jour ou rappel ?",
+                "",
+                "Dans un rapport, la vague du jour est le premier nombre après le nom du candidat ; ces parts ne le"
+                " sont pas. Vérifier la colonne dans le PDF avant de fusionner.",
+                "",
+            ]
+        )
+        lines.extend(f"- {_safe(item)}" for item in doubtful)
+        lines.append("")
     far = getattr(proposal, "outliers", None) or []
     if far:
         lines.extend(
@@ -414,7 +427,12 @@ def can_automerge(proposal):
     une alerte de l'extraction laissent la PR en brouillon, pour une relecture humaine, comme
     une part très loin des autres sondages (`outliers.find`, posé par `create_or_update`).
     """
-    return not proposal.missing and not getattr(proposal, "failures", None) and not getattr(proposal, "outliers", None)
+    return (
+        not proposal.missing
+        and not getattr(proposal, "failures", None)
+        and not getattr(proposal, "outliers", None)
+        and not getattr(proposal, "columns", None)
+    )
 
 
 def create_or_update(issue, repo, proposal, root, models=(), calls=0, automerge=False):
@@ -428,6 +446,9 @@ def create_or_update(issue, repo, proposal, root, models=(), calls=0, automerge=
     # Les fichiers de la proposition sont déjà écrits : `find` les écarte et compare chaque
     # part aux sondages publiés avant elle.
     proposal.outliers = outliers.find(proposal, root)
+    # Un rapport : chaque part doit être la vague du jour, le premier nombre de sa ligne.
+    if getattr(proposal, "source", "notice") == "report":
+        proposal.columns = columns.check(proposal)
     ready = automerge and can_automerge(proposal)
     branch = branch_name(issue)
     _validate(root)

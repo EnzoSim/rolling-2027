@@ -111,5 +111,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ROLLING_AUTOMERGE: ${{ vars.ROLLING_AUTOMERGE || '1' }}
+          # Un dépouillement tiré du rapport d'un institut : fusion seule avec « 1 ».
+          ROLLING_REPORT_AUTOMERGE: ${{ vars.ROLLING_REPORT_AUTOMERGE || '0' }}
           PYTHONUNBUFFERED: "1"
         run: python submit_extraction.py --issue "$ISSUE" --input "$RUNNER_TEMP/comment.txt" --post --pr
