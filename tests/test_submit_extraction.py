@@ -237,7 +237,7 @@ def test_un_effectif_ecrit_nulle_part_est_refuse():
 
 # Une issue du guet des rapports d'instituts (check_institute_reports.py), dépouillée par le bot.
 
-RAPPORT = "https://tolunacorporate.com/wp-content/uploads/2026/11/Rapport-Toluna-Vague-9.pdf"
+RAPPORT_GUET = "https://tolunacorporate.com/wp-content/uploads/2026/11/Rapport-Toluna-Vague-9.pdf"
 
 
 def test_un_rapport_arrive_apres_sa_notice_n_ajoute_rien():
@@ -250,7 +250,7 @@ def _publier_un_rapport(monkeypatch, tmp_path, env):
     seen = {}
     monkeypatch.setattr(se, "_github_request", lambda *args, **kwargs: None)
     monkeypatch.setattr(se, "issue_poll_filename", lambda *args: "Rapport-Toluna-Vague-9.pdf")
-    monkeypatch.setattr(se, "issue_report_url", lambda *args: RAPPORT)
+    monkeypatch.setattr(se, "issue_report_url", lambda *args: RAPPORT_GUET)
     monkeypatch.setattr(se, "issue_text", lambda *args: "--- page 1 ---\nrapport")
     proposal = SimpleNamespace(polls=[{"poll_id": "20261103_1105_hi_A", "hypothese": "H123"}], attachments=[])
 
