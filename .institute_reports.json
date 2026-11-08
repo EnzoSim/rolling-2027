@@ -1,0 +1,15 @@
+{
+  "seen": {
+    "Cluster17:barometre-politico-cluster17-octobre-2026.pdf": {
+      "at": "2026-11-08T05:40:53+00:00",
+      "note": "antérieur au guet : sondage déjà relevé depuis sa notice",
+      "url": "https://cluster17.com/wp-content/uploads/2026/10/Barometre_Politico_Cluster17_octobre_2026.pdf"
+    },
+    "Harris Interactive:rapport-toluna-barometre-presidentielle-2027-vague-9-m6-rtl-9-novembre-2026.pdf": {
+      "at": "2026-11-08T05:11:00+00:00",
+      "issue": 97,
+      "note": "ajouté à la main depuis le rapport (PR #97)",
+      "url": "https://tolunacorporate.com/wp-content/uploads/2026/11/Rapport-Toluna-Barometre-Presidentielle-2027-Vague-9-M6-RTL-9-novembre-2026-1.pdf"
+    }
+  }
+}

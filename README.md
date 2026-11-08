@@ -25,6 +25,15 @@ Tout l'historique depuis juillet 2024, premier et second tours, au format de Mie
 4. **La vérification.** Quand chaque chiffre est retrouvé sur sa ligne de la notice et que les tests passent, la PR se fusionne seule. En cas de panne de GitHub, elle est retentée, puis rattrapée chaque heure (`merge_verified_prs.py`). Sinon, elle reste en brouillon. Elle reste aussi en brouillon quand une part s'écarte de plus de 20 points de la médiane des autres sondages du même tour (`mining/outliers.py`) : c'est ce qui arrive quand une notice étiquette mal ses propres lignes, comme la notice 10318 d'OpinionWay en octobre 2026 (Le Pen à 4 %, Zemmour à 35 %).
 5. **La publication.** Après la fusion, `post-merge.yml` régénère le CSV, le JSON, le compteur et le TOP 3.
 
+### Avant la notice : les rapports des instituts
+
+La Commission met une notice en ligne de quelques heures à deux jours après la publication du sondage. Toutes les 20 minutes, `check-institute-reports.yml` (`check_institute_reports.py`) lit l'API publique WordPress (`/wp-json/wp/v2/media`) de Toluna Harris Interactive, de l'IFOP (son baromètre de l'élection présidentielle), d'Elabe et de Cluster17, et ouvre une issue pour chaque nouveau rapport d'intentions de vote. Le dépouillement lit alors le rapport à la place de la notice.
+
+- **Un rapport n'est pris qu'une fois public** : son article est publié sur le site de l'institut, ou la date que porte son nom est arrivée. Toluna dépose parfois un rapport avant sa date : il attend son jour.
+- **La PR reste en brouillon, à fusionner d'un clic.** Un rapport aligne souvent la vague du jour et son rappel sur la même ligne (« Mélenchon 19 17 »), et la vérification ne distingue pas les deux colonnes. La variable `ROLLING_REPORT_AUTOMERGE` à `1` fusionne seule ces PR.
+- **Quand la notice arrive**, ses tableaux identiques se rattachent aux mêmes lignes : seule la cellule `filename` reçoit le nom de la notice. D'autres chiffres pour le même sondage ne s'écrivent pas, l'issue le dit. Un rapport arrivé après sa notice n'ajoute rien.
+- `.institute_reports.json` retient les rapports déjà vus.
+
 Toutes les six heures, `sync-upstream.yml` reprend les sondages que Mieux Voter a publiés et que ce dépôt n'a pas encore. `scripts/import_upstream.py` les reconnaît à leur institut, leurs dates et leurs parts. Seules les données sont reprises, jamais le code.
 
 | | Mieux Voter | rolling-2027 |
@@ -35,7 +44,7 @@ Toutes les six heures, `sync-upstream.yml` reprend les sondages que Mieux Voter 
 
 ### Réglages
 
-Secrets facultatifs (*Settings → Secrets and variables → Actions*) : `ANTHROPIC_API_KEY` et/ou `XAI_API_KEY`. Les clés `OPENROUTER_API_KEY`, `MISTRAL_API_KEY` et `GEMINI_API_KEY` restent en secours. Variables facultatives : `LLM_PROVIDERS` (l'ordre des fournisseurs, par exemple `xai,anthropic`), `XAI_MODELS`, `ANTHROPIC_MODELS` et `ROLLING_AUTOMERGE` (`0` pour relire chaque PR à la main).
+Secrets facultatifs (*Settings → Secrets and variables → Actions*) : `ANTHROPIC_API_KEY` et/ou `XAI_API_KEY`. Les clés `OPENROUTER_API_KEY`, `MISTRAL_API_KEY` et `GEMINI_API_KEY` restent en secours. Variables facultatives : `LLM_PROVIDERS` (l'ordre des fournisseurs, par exemple `xai,anthropic`), `XAI_MODELS`, `ANTHROPIC_MODELS`, `ROLLING_AUTOMERGE` (`0` pour relire chaque PR à la main) et `ROLLING_REPORT_AUTOMERGE` (`1` pour fusionner seules les PR tirées d'un rapport d'institut).
 
 ## 📊 Données consolidées
 

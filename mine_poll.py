@@ -34,6 +34,7 @@ from check_new_polls import (
     get_catalog_polls,
     notice_links,
 )
+from check_institute_reports import REPORT_MARKER_RE, allowed_report_url
 from mining import client as llm
 from mining import csvio, extraction, notice, pull_request, render, steps
 from mining.proposal import ProposalError, build as build_proposal
@@ -69,19 +70,59 @@ def poll_filename_from_body(body):
     return match.group(1).strip() if match else None
 
 
+_ISSUE_BODIES = {}
+
+
+def _issue_body(repo, number, token):
+    """Le corps de l'issue, lu une fois par exécution (le nom du fichier et le rapport en viennent)."""
+    key = (repo, int(number))
+    if key not in _ISSUE_BODIES:
+        url = f"https://api.github.com/repos/{repo}/issues/{number}"
+        try:
+            issue = github_get(url, token)
+        except HTTPError as exc:
+            raise SystemExit(f"❌ Issue #{number} : l'API GitHub répond {exc.code}. Dépôt ou numéro d'issue correct ?")
+        except (URLError, TimeoutError, OSError) as exc:
+            raise SystemExit(f"❌ Issue #{number} : l'API GitHub est injoignable ({exc})")
+        _ISSUE_BODIES[key] = issue.get("body") or ""
+    return _ISSUE_BODIES[key]
+
+
 def issue_poll_filename(repo, number, token):
     """Le nom de fichier de la notice, lu dans le corps de l'issue."""
-    url = f"https://api.github.com/repos/{repo}/issues/{number}"
-    try:
-        issue = github_get(url, token)
-    except HTTPError as exc:
-        raise SystemExit(f"❌ Issue #{number} : l'API GitHub répond {exc.code}. Dépôt ou numéro d'issue correct ?")
-    except (URLError, TimeoutError, OSError) as exc:
-        raise SystemExit(f"❌ Issue #{number} : l'API GitHub est injoignable ({exc})")
-    filename = poll_filename_from_body(issue.get("body"))
+    filename = poll_filename_from_body(_issue_body(repo, number, token))
     if not filename:
         raise NoticeUnavailable("le corps de l'issue n'indique aucun fichier de notice.")
     return filename
+
+
+def report_url_from_body(body):
+    """Le rapport d'institut d'une issue ouverte par check_institute_reports.py, ou None."""
+    match = REPORT_MARKER_RE.search(body or "")
+    return match.group(1) if match else None
+
+
+def issue_report_url(repo, number, token):
+    return report_url_from_body(_issue_body(repo, number, token))
+
+
+def report_text_for(url):
+    """Le texte d'un rapport d'institut, téléchargé depuis le site de l'institut seulement."""
+    if not allowed_report_url(url):
+        raise NoticeUnavailable(f"le rapport `{url}` n'est pas sur le site d'un institut guetté.")
+    print(f"📄 Rapport de l'institut : {url}")
+    try:
+        return notice.pdf_text_from_url(url)
+    except (HTTPError, URLError, TimeoutError, OSError) as exc:
+        raise NoticeUnavailable(f"le rapport `{url}` n'a pas pu être téléchargé ({exc}).") from exc
+
+
+def issue_text(repo, number, token):
+    """Le texte à dépouiller pour une issue : son rapport d'institut s'il en a un, sinon sa notice."""
+    report = issue_report_url(repo, number, token)
+    if report:
+        return report_text_for(report)
+    return notice_text_for(issue_poll_filename(repo, number, token))
 
 
 def notice_text_for(filename):
@@ -116,7 +157,7 @@ def resolve_text(args, repo, token):
         return Path(args.txt).read_text(encoding="utf-8")
     if args.pdf:
         return notice.extract_pdf_text(args.pdf)
-    return notice_text_for(issue_poll_filename(repo, args.issue, token))
+    return issue_text(repo, args.issue, token)
 
 
 def source_filename(args, repo, token, text):
@@ -125,6 +166,21 @@ def source_filename(args, repo, token, text):
         return issue_poll_filename(repo, args.issue, token)
     header = notice.parse_header(text)
     return Path(header.get("source_pdf") or args.pdf or args.txt).name
+
+
+def automerge_allowed(repo, number, token):
+    """La fusion automatique : permise pour une notice ; pour un rapport d'institut, sur demande.
+
+    Un rapport aligne souvent la vague du jour et son rappel sur la même ligne (« Mélenchon
+    19 17 ») : les deux chiffres y sont, les deux colonnes font 100. La vérification ne les
+    distingue pas ; une PR tirée d'un rapport reste donc un brouillon, à fusionner d'un clic,
+    tant que la variable ROLLING_REPORT_AUTOMERGE ne vaut pas 1.
+    """
+    if os.environ.get("ROLLING_AUTOMERGE") != "1":
+        return False
+    if number and issue_report_url(repo, number, token):
+        return os.environ.get("ROLLING_REPORT_AUTOMERGE") == "1"
+    return True
 
 
 def notice_date(text):
@@ -336,7 +392,7 @@ def main(argv=None):
                             models=models,
                             calls=conversation.calls,
                             # rolling-2027 : fusion automatique d'un dépouillement complet.
-                            automerge=os.environ.get("ROLLING_AUTOMERGE") == "1",
+                            automerge=automerge_allowed(repo, args.issue, token),
                         )
                         if created.merged:
                             pr_status = (

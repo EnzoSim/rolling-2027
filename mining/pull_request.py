@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from mining import outliers
+from mining.proposal import awaits_notice
 
 
 class PullRequestError(RuntimeError):
@@ -222,6 +223,15 @@ def body(issue, proposal, models, calls, ready=False):
     """
     method = proposal.methodology
     lines = ["# Proposition de sondage générée automatiquement", "", f"Closes #{issue}", ""]
+    if awaits_notice({"filename": proposal.filename}):
+        lines.extend(
+            [
+                f"> 📄 Source : le rapport de l'institut (`{_safe(proposal.filename)}`), avant sa notice. Un rapport"
+                " aligne souvent la vague du jour et son rappel sur la même ligne : vérifier que chaque chiffre"
+                " est celui de la vague du jour.",
+                "",
+            ]
+        )
     if ready:
         lines.extend(
             [
