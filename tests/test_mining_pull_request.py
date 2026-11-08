@@ -379,3 +379,46 @@ def test_sans_part_aberrante_la_fusion_reste_automatique(monkeypatch, tmp_path):
     assert result.merged
     create = next(c for c in commands if c[:3] == ["gh", "pr", "create"])
     assert "Parts très loin" not in create[create.index("--body") + 1]
+
+
+# Un rapport d'institut : la vague du jour, jamais son rappel (mining/columns.py).
+
+
+def _rapport(value):
+    proposal = _proposal()
+    proposal.failures = []
+    proposal.source = "report"
+    proposal.evidence["20260909_0910_ow_A"]["values"] = [
+        {"candidat": "Jean-Luc Mélenchon", "intentions": value, "source": "Jean-Luc Mélenchon 19 17"}
+    ]
+    return proposal
+
+
+def test_un_rapport_a_la_vague_du_jour_se_fusionne_seul(monkeypatch, tmp_path):
+    commands = []
+    monkeypatch.setattr(pull_request, "_run", _faux_gh(commands))
+    monkeypatch.setattr(pull_request, "_validate", lambda root: None)
+    result = pull_request.create_or_update(42, "EnzoSim/rolling-2027", _rapport("19"), tmp_path, automerge=True)
+    assert result.merged
+
+
+def test_un_rapport_au_rappel_reste_en_brouillon_et_le_dit(monkeypatch, tmp_path):
+    commands = []
+    monkeypatch.setattr(pull_request, "_run", _faux_gh(commands))
+    monkeypatch.setattr(pull_request, "_validate", lambda root: None)
+    proposal = _rapport("17")
+    result = pull_request.create_or_update(42, "EnzoSim/rolling-2027", proposal, tmp_path, automerge=True)
+    assert not result.merged and not any(c[:3] == ["gh", "pr", "merge"] for c in commands)
+    create = next(c for c in commands if c[:3] == ["gh", "pr", "create"])
+    assert "--draft" in create
+    assert "Vague du jour ou rappel" in create[create.index("--body") + 1]
+    assert proposal.columns and "Jean-Luc Mélenchon : 17" in proposal.columns[0]
+
+
+def test_une_notice_n_a_qu_une_colonne_et_n_est_pas_controlee(monkeypatch, tmp_path):
+    commands = []
+    monkeypatch.setattr(pull_request, "_run", _faux_gh(commands))
+    monkeypatch.setattr(pull_request, "_validate", lambda root: None)
+    proposal = _rapport("17")
+    proposal.source = "notice"
+    assert pull_request.create_or_update(42, "EnzoSim/rolling-2027", proposal, tmp_path, automerge=True).merged

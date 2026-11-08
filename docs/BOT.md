@@ -16,6 +16,13 @@ Ce dépôt n'a pas de clé d'API. Un bot (le bot Grok d'Enzo) ou une personne li
 
 Seul un compte qui a des droits sur le dépôt déclenche la publication. Pour le bot : un jeton GitHub à granularité fine, limité à `EnzoSim/rolling-2027`, avec la seule permission *Issues : lecture et écriture*. Il ne pousse rien et ne touche ni au code ni aux workflows.
 
+## Les issues d'un rapport d'institut
+
+Le guet des rapports (`check_institute_reports.py`) ouvre aussi des issues `new-poll` étiquetées `rapport-institut` : leur premier lien est le PDF du rapport sur le site de l'institut, pas une notice. Le dépouillement se fait de la même façon et se vérifie contre ce rapport. Deux règles en plus :
+
+- prendre la colonne de la vague du jour, jamais celle du rappel (« Rappels 19-21 octobre ») : chaque part doit être le premier nombre après le nom du candidat sur sa ligne, sinon la PR reste en brouillon ;
+- ne pas mettre de ligne `RAPPORT:` : le document est déjà le rapport.
+
 ## Le format
 
 Les mêmes règles que celles données au modèle (`mining/prompts/e2_methodologie.txt` et `e3_tableaux.txt`) :

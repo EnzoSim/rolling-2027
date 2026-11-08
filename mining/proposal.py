@@ -52,6 +52,9 @@ class Proposal:
     attachments: list = field(default_factory=list)
     # « notice » (la Commission) ou « report » (le rapport de l'institut, check_institute_reports.py).
     source: str = "notice"
+    # Parts d'un rapport qui ne sont pas le premier nombre de leur ligne (mining/columns.py) :
+    # la vague du jour ou son rappel ? La PR reste en brouillon.
+    columns: list = field(default_factory=list)
 
     def to_dict(self):
         return asdict(self)

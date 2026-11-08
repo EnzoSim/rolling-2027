@@ -25,7 +25,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from check_new_polls import _github_request
-from mine_poll import NoticeUnavailable, issue_poll_filename, issue_text, notice_date, notice_text_for
+from mine_poll import NoticeUnavailable, issue_poll_filename, issue_report_url, issue_text, notice_date, notice_text_for
 from mining import csvio, extraction, notice, pull_request, render
 from mining.proposal import ProposalError, build as build_proposal
 
@@ -206,8 +206,12 @@ def report_text(url):
     return notice.pdf_text_from_url(url)
 
 
-def verify(text, filename, notice_text):
-    """Vérifie tout ; rend la proposition prête à écrire dans le dépôt."""
+def verify(text, filename, notice_text, source="notice"):
+    """Vérifie tout ; rend la proposition prête à écrire dans le dépôt.
+
+    `source` : « report » quand l'issue vient du guet des rapports d'instituts ; le
+    dédoublonnage le traite alors comme un rapport (rien d'ajouté après sa notice).
+    """
     methodology_text, page_blocks, report = split_submission(text)
     tables_text = report_text(report) if report else notice_text
     pages = notice.split_pages(notice_text)
@@ -224,7 +228,7 @@ def verify(text, filename, notice_text):
     known = extraction.candidate_names(ROOT / "candidats.csv")
     tables = check_tables(tables_text, page_blocks, known, base_pages(tables_text, methodology) if report else ())
     try:
-        proposal = build_proposal(filename, methodology, tables, ROOT)
+        proposal = build_proposal(filename, methodology, tables, ROOT, source=source)
     except ProposalError as exc:
         raise SubmissionError(str(exc)) from exc
     return proposal, report
@@ -264,12 +268,14 @@ def main(argv=None):
 
     try:
         filename = issue_poll_filename(repo, args.issue, token)
+        # Une issue du guet des rapports d'instituts : le document est le rapport.
+        from_report = bool(issue_report_url(repo, args.issue, token))
         notice_text = (
             Path(args.notice_txt).read_text(encoding="utf-8")
             if args.notice_txt
             else issue_text(repo, args.issue, token)
         )
-        proposal, report = verify(text, filename, notice_text)
+        proposal, report = verify(text, filename, notice_text, source="report" if from_report else "notice")
     except (SubmissionError, NoticeUnavailable) as exc:
         message = f"❌ Dépouillement refusé : {exc}"
         print(message)
@@ -295,7 +301,10 @@ def main(argv=None):
             ROOT,
             models=[f"dépouillement manuel{' (rapport : ' + report + ')' if report else ''}"],
             calls=0,
-            automerge=os.environ.get("ROLLING_AUTOMERGE") == "1",
+            # La même règle que mine_poll.automerge_allowed : un rapport se fusionne seul
+            # seulement avec ROLLING_REPORT_AUTOMERGE à 1.
+            automerge=os.environ.get("ROLLING_AUTOMERGE") == "1"
+            and (not from_report or os.environ.get("ROLLING_REPORT_AUTOMERGE") == "1"),
         )
     except (pull_request.PullRequestError, ProposalError) as exc:
         # Le dépouillement était juste : la panne est de notre côté, le bot ne doit rien changer.
