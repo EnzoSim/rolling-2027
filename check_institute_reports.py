@@ -74,10 +74,16 @@ INSTITUTES = (
     # Le baromètre de l'élection présidentielle ; les sondages pour LCI ne sont pas sur le site.
     Institute("IFOP", "www.ifop.com", re.compile(r"barometre-de-l-?election-presidentielle|intentions-de-vote")),
     Institute("ELABE", "elabe.fr", re.compile(r"intentions-de-vote|election-presidentielle|presidentielle-20\d\d")),
+    # Cluster17 abrège « intentions de vote » en « ITV » dans le nom de ses rapports
+    # (« ITV-Politico-Octobre-C17.pdf », « Sondage_Cluster17_ITV_P2027.pdf ») : le mot seul,
+    # entre deux séparateurs, suffit.
     Institute(
         "Cluster17",
         "cluster17.com",
-        re.compile(r"intentions-de-vote-p\d\d|sondage-election-presidentielle-20\d\d|barometre-politico"),
+        re.compile(
+            r"intentions-de-vote-p\d\d|sondage-election-presidentielle-20\d\d|barometre-politico"
+            r"|(?<![a-z0-9])itv(?![a-z0-9])"
+        ),
     ),
 )
 HOSTS = tuple(institute.site for institute in INSTITUTES)
