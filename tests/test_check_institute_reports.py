@@ -25,6 +25,10 @@ NOW = dt.datetime(2026, 11, 8, 5, 0, tzinfo=dt.timezone.utc)  # dimanche 8 novem
         (CLUSTER, "Intentions-de-vote-P27-Politico-Septembre-26.pdf"),
         (CLUSTER, "Barometre_Politico_Cluster17_octobre_2026.pdf"),
         (CLUSTER, "C17_Le_Point_Sondage_Election_Presidentielle_2027_Sep26-.pdf"),
+        # « ITV » : les trois rapports d'octobre 2026, que le guet ne voyait pas.
+        (CLUSTER, "ITV-Politico-Octobre-C17.pdf"),
+        (CLUSTER, "Sondage_Cluster17_ITV_P2027.pdf"),
+        (CLUSTER, "P27-ITV-et-focus-droite-et-centre-C17-Le-Point.pdf"),
     ],
 )
 def test_un_rapport_d_intentions_de_vote_est_retenu(institute, name):
@@ -41,6 +45,11 @@ def test_un_rapport_d_intentions_de_vote_est_retenu(institute, name):
         (IFOP, "122860-ifop-asteres-barometre-2026.pdf"),
         (ELABE, "20261105_les_echos_observatoire-politique.pdf"),
         (ELABE, "08042025_elabe_bfmlyon_bfmtv_municipale-lyon-2026.pdf"),
+        (CLUSTER, "Sondage_Cluster17_LePoint_Primaire.pdf"),
+        (CLUSTER, "Barometre_des_personnalites_politiques_Novembre_2026_Cluster17.pdf"),
+        (CLUSTER, "ITV-Legislatives-Octobre-C17.pdf"),
+        # « itv » dans un mot n'est pas l'abréviation.
+        (CLUSTER, "Sondage_Cluster17_Competitivite_2026.pdf"),
     ],
 )
 def test_ce_qui_ne_mesure_pas_le_premier_tour_est_ecarte(institute, name):
