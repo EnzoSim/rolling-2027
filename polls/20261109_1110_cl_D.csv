@@ -1,12 +1,12 @@
 candidat,intentions,erreur_sup,erreur_inf
-Marine Le Pen,31,,
-Jean-Luc Mélenchon,20.5,,
-Raphaël Glucksmann,11.5,,
-Gabriel Attal,11,,
-David Lisnard,10,,
-Bruno Retailleau,6,,
-Éric Zemmour,3,,
-Nicolas Dupont-Aignan,3,,
-Fabien Roussel,2,,
-Marine Tondelier,1.5,,
-Nathalie Arthaud,0.5,,
+Marine Le Pen,31,2.66,-2.66
+Jean-Luc Mélenchon,20.5,2.32,-2.32
+Raphaël Glucksmann,11.5,1.83,-1.83
+Gabriel Attal,11,1.8,-1.8
+David Lisnard,10,1.72,-1.72
+Bruno Retailleau,6,1.36,-1.36
+Éric Zemmour,3,0.98,-0.98
+Nicolas Dupont-Aignan,3,0.98,-0.98
+Fabien Roussel,2,0.8,-0.8
+Marine Tondelier,1.5,0.7,-0.7
+Nathalie Arthaud,0.5,0.41,-0.41
