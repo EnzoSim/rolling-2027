@@ -1,6 +1,6 @@
 # rolling-2027
 
-![Sondages agrégés](https://img.shields.io/badge/sondages_agrégés-400-blue)
+![Sondages agrégés](https://img.shields.io/badge/sondages_agrégés-406-blue)
 
 **Tous les sondages de la présidentielle 2027, dans l'heure, vérifiés chiffre par chiffre.**
 
@@ -40,7 +40,7 @@ Le détail : [docs/FONCTIONNEMENT.md](docs/FONCTIONNEMENT.md).
 |:----:|:--------:|----------------------------------|
 | 🥇 | 27 | Bruno Retailleau, Fabien Roussel, Jean-Luc Mélenchon, Marine Le Pen, Marine Tondelier, Nathalie Arthaud, Nicolas Dupont-Aignan, Raphaël Glucksmann, Édouard Philippe, Éric Zemmour |
 | 🥈 | 27 | $\textcolor{green}{\text{+ Gabriel Attal}}$, $\textcolor{red}{\text{− Édouard Philippe}}$ |
-| 🥉 | 22 | $\textcolor{green}{\text{+ Gabriel Attal}}$ |
+| 🥉 | 23 | $\textcolor{green}{\text{+ Gabriel Attal}}$ |
 
 > 🥇 liste complète des candidats (référence). 🥈🥉 diff vs 🥇 : $\textcolor{green}{\text{+ ajouté}}$ en vert, $\textcolor{red}{\text{− retiré}}$ en rouge.
 <!-- TOP_HYPOTHESES:END -->
