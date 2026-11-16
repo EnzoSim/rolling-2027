@@ -55114,6 +55114,138 @@
     {
       "candidats": [
         {
+          "candidate_id": "JLM",
+          "candidat": "Jean-Luc Mélenchon",
+          "complete_name": "Jean-Luc Mélenchon",
+          "name": "Jean-Luc",
+          "surname": "Mélenchon",
+          "parti": "La France Insoumise",
+          "annonce_candidature": "2026-05-03",
+          "retrait_candidature": "",
+          "second_round": "",
+          "intentions": 31.5,
+          "erreur_sup": 2.44,
+          "erreur_inf": -2.44
+        },
+        {
+          "candidate_id": "MLP",
+          "candidat": "Marine Le Pen",
+          "complete_name": "Marine Le Pen",
+          "name": "Marine",
+          "surname": "Le Pen",
+          "parti": "Rassemblement National",
+          "annonce_candidature": "2026-07-07",
+          "retrait_candidature": "",
+          "second_round": "",
+          "intentions": 68.5,
+          "erreur_sup": 2.44,
+          "erreur_inf": -2.44
+        }
+      ],
+      "poll_id": "20261112_1113_el_2A",
+      "institut": "ELABE",
+      "commanditaire": "BFMTV, La Tribune Dimanche",
+      "debut_enquete": "2026-11-12",
+      "fin_enquete": "2026-11-13",
+      "echantillon": 1500,
+      "population": "représentatif des résidents de France métropolitaine âgés de 18 ans et plus",
+      "hypothese": "H2_9",
+      "tour": "2nd Tour",
+      "rolling": "",
+      "media": "True",
+      "filename": "10375-pres-iv-elabe-14-novembre.pdf"
+    },
+    {
+      "candidats": [
+        {
+          "candidate_id": "RG",
+          "candidat": "Raphaël Glucksmann",
+          "complete_name": "Raphaël Glucksmann",
+          "name": "Raphaël",
+          "surname": "Glucksmann",
+          "parti": "Place Publique",
+          "annonce_candidature": "2026-08-23",
+          "retrait_candidature": "",
+          "second_round": "",
+          "intentions": 45,
+          "erreur_sup": 2.61,
+          "erreur_inf": -2.61
+        },
+        {
+          "candidate_id": "MLP",
+          "candidat": "Marine Le Pen",
+          "complete_name": "Marine Le Pen",
+          "name": "Marine",
+          "surname": "Le Pen",
+          "parti": "Rassemblement National",
+          "annonce_candidature": "2026-07-07",
+          "retrait_candidature": "",
+          "second_round": "",
+          "intentions": 55,
+          "erreur_sup": 2.61,
+          "erreur_inf": -2.61
+        }
+      ],
+      "poll_id": "20261112_1113_el_2B",
+      "institut": "ELABE",
+      "commanditaire": "BFMTV, La Tribune Dimanche",
+      "debut_enquete": "2026-11-12",
+      "fin_enquete": "2026-11-13",
+      "echantillon": 1500,
+      "population": "représentatif des résidents de France métropolitaine âgés de 18 ans et plus",
+      "hypothese": "H2_10",
+      "tour": "2nd Tour",
+      "rolling": "",
+      "media": "True",
+      "filename": "10375-pres-iv-elabe-14-novembre.pdf"
+    },
+    {
+      "candidats": [
+        {
+          "candidate_id": "EP",
+          "candidat": "Édouard Philippe",
+          "complete_name": "Édouard Philippe",
+          "name": "Édouard",
+          "surname": "Philippe",
+          "parti": "Horizon",
+          "annonce_candidature": "2024-09-03",
+          "retrait_candidature": "",
+          "second_round": "",
+          "intentions": 45,
+          "erreur_sup": 2.61,
+          "erreur_inf": -2.61
+        },
+        {
+          "candidate_id": "MLP",
+          "candidat": "Marine Le Pen",
+          "complete_name": "Marine Le Pen",
+          "name": "Marine",
+          "surname": "Le Pen",
+          "parti": "Rassemblement National",
+          "annonce_candidature": "2026-07-07",
+          "retrait_candidature": "",
+          "second_round": "",
+          "intentions": 55,
+          "erreur_sup": 2.61,
+          "erreur_inf": -2.61
+        }
+      ],
+      "poll_id": "20261112_1113_el_2C",
+      "institut": "ELABE",
+      "commanditaire": "BFMTV, La Tribune Dimanche",
+      "debut_enquete": "2026-11-12",
+      "fin_enquete": "2026-11-13",
+      "echantillon": 1500,
+      "population": "représentatif des résidents de France métropolitaine âgés de 18 ans et plus",
+      "hypothese": "H2_2",
+      "tour": "2nd Tour",
+      "rolling": "",
+      "media": "True",
+      "filename": "10375-pres-iv-elabe-14-novembre.pdf"
+    },
+    {
+      "candidats": [
+        {
           "candidate_id": "MLP",
           "candidat": "Marine Le Pen",
           "complete_name": "Marine Le Pen",
@@ -55279,7 +55411,7 @@
       "tour": "1er Tour",
       "rolling": "",
       "media": "True",
-      "filename": "les-francais-et-lelection-presidentielle-2027.pdf"
+      "filename": "10375-pres-iv-elabe-14-novembre.pdf"
     },
     {
       "candidats": [
@@ -55449,7 +55581,7 @@
       "tour": "1er Tour",
       "rolling": "",
       "media": "True",
-      "filename": "les-francais-et-lelection-presidentielle-2027.pdf"
+      "filename": "10375-pres-iv-elabe-14-novembre.pdf"
     },
     {
       "candidats": [
@@ -55619,7 +55751,7 @@
       "tour": "1er Tour",
       "rolling": "",
       "media": "True",
-      "filename": "les-francais-et-lelection-presidentielle-2027.pdf"
+      "filename": "10375-pres-iv-elabe-14-novembre.pdf"
     },
     {
       "candidats": [
@@ -55789,7 +55921,7 @@
       "tour": "1er Tour",
       "rolling": "",
       "media": "True",
-      "filename": "les-francais-et-lelection-presidentielle-2027.pdf"
+      "filename": "10375-pres-iv-elabe-14-novembre.pdf"
     },
     {
       "candidats": [
@@ -55945,7 +56077,7 @@
       "tour": "1er Tour",
       "rolling": "",
       "media": "True",
-      "filename": "les-francais-et-lelection-presidentielle-2027.pdf"
+      "filename": "10375-pres-iv-elabe-14-novembre.pdf"
     },
     {
       "candidats": [
@@ -56157,7 +56289,7 @@
       "tour": "1er Tour",
       "rolling": "",
       "media": "True",
-      "filename": "les-francais-et-lelection-presidentielle-2027.pdf"
+      "filename": "10375-pres-iv-elabe-14-novembre.pdf"
     }
   ],
   "contribution": {
