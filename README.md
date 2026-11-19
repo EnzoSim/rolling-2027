@@ -1,6 +1,6 @@
 # rolling-2027
 
-![Sondages agrégés](https://img.shields.io/badge/sondages_agrégés-414-blue)
+![Sondages agrégés](https://img.shields.io/badge/sondages_agrégés-424-blue)
 
 **Tous les sondages de la présidentielle 2027, dans l'heure, vérifiés chiffre par chiffre.**
 
