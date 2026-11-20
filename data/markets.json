@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "collectedAt": "2026-11-19T16:01:39.996Z",
+  "collectedAt": "2026-11-20T15:44:11.495Z",
   "sources": {
     "polymarket": "https://polymarket.com/event/next-french-presidential-election",
     "kalshi": "https://kalshi.com/markets/kxfrenchpres/french-presidential-election"
@@ -9,13 +9,13 @@
     "status": {
       "polymarket": {
         "mode": "live",
-        "asOf": "2026-11-19T16:01:37.276Z",
-        "checkedAt": "2026-11-19T16:01:37.276Z"
+        "asOf": "2026-11-20T15:44:08.919Z",
+        "checkedAt": "2026-11-20T15:44:08.919Z"
       },
       "kalshi": {
         "mode": "live",
-        "asOf": "2026-11-19T16:01:37.318Z",
-        "checkedAt": "2026-11-19T16:01:37.318Z"
+        "asOf": "2026-11-20T15:44:08.954Z",
+        "checkedAt": "2026-11-20T15:44:08.954Z"
       }
     },
     "history": {
@@ -863,6 +863,10 @@
           },
           {
             "day": "2026-11-19",
+            "cents": 45.7
+          },
+          {
+            "day": "2026-11-20",
             "cents": 45.7
           }
         ],
@@ -1762,6 +1766,10 @@
           {
             "day": "2026-11-19",
             "cents": 5.5
+          },
+          {
+            "day": "2026-11-20",
+            "cents": 6.5
           }
         ],
         "melenchon": [
@@ -2620,6 +2628,10 @@
           {
             "day": "2026-11-19",
             "cents": 14.5
+          },
+          {
+            "day": "2026-11-20",
+            "cents": 14.5
           }
         ],
         "glucksmann": [
@@ -3469,6 +3481,10 @@
           },
           {
             "day": "2026-11-19",
+            "cents": 1.5
+          },
+          {
+            "day": "2026-11-20",
             "cents": 1.5
           }
         ],
@@ -4332,6 +4348,10 @@
           {
             "day": "2026-11-19",
             "cents": 3
+          },
+          {
+            "day": "2026-11-20",
+            "cents": 2.7
           }
         ],
         "attal": [
@@ -5209,6 +5229,10 @@
           },
           {
             "day": "2026-11-19",
+            "cents": 0.4
+          },
+          {
+            "day": "2026-11-20",
             "cents": 0.4
           }
         ],
@@ -6108,6 +6132,10 @@
           {
             "day": "2026-11-19",
             "cents": 0.5
+          },
+          {
+            "day": "2026-11-20",
+            "cents": 0.6
           }
         ],
         "tondelier": [
@@ -6958,6 +6986,10 @@
           {
             "day": "2026-11-19",
             "cents": 0.1
+          },
+          {
+            "day": "2026-11-20",
+            "cents": 0.1
           }
         ],
         "zemmour": [
@@ -7803,6 +7835,10 @@
           },
           {
             "day": "2026-11-19",
+            "cents": 0.3
+          },
+          {
+            "day": "2026-11-20",
             "cents": 0.3
           }
         ],
@@ -8650,6 +8686,10 @@
           {
             "day": "2026-11-19",
             "cents": 1.4
+          },
+          {
+            "day": "2026-11-20",
+            "cents": 2.8
           }
         ],
         "roussel": [
@@ -9544,6 +9584,10 @@
           {
             "day": "2026-11-19",
             "cents": 0.1
+          },
+          {
+            "day": "2026-11-20",
+            "cents": 0.1
           }
         ],
         "lisnard": [
@@ -10414,6 +10458,10 @@
           {
             "day": "2026-11-19",
             "cents": 18.6
+          },
+          {
+            "day": "2026-11-20",
+            "cents": 17.8
           }
         ],
         "bardella": [
@@ -11267,6 +11315,10 @@
           },
           {
             "day": "2026-11-19",
+            "cents": 1.7
+          },
+          {
+            "day": "2026-11-20",
             "cents": 1.7
           }
         ]
@@ -12168,6 +12220,10 @@
           {
             "day": "2026-11-19",
             "cents": 52.5
+          },
+          {
+            "day": "2026-11-20",
+            "cents": 50.5
           }
         ],
         "philippe": [
@@ -13030,6 +13086,10 @@
           {
             "day": "2026-11-19",
             "cents": 5.3
+          },
+          {
+            "day": "2026-11-20",
+            "cents": 4.7
           }
         ],
         "melenchon": [
@@ -13876,6 +13936,10 @@
           {
             "day": "2026-11-19",
             "cents": 12.5
+          },
+          {
+            "day": "2026-11-20",
+            "cents": 12.5
           }
         ],
         "hollande": [
@@ -14521,6 +14585,10 @@
           },
           {
             "day": "2026-11-19",
+            "cents": 2.5
+          },
+          {
+            "day": "2026-11-20",
             "cents": 2.5
           }
         ],
@@ -15403,6 +15471,10 @@
           },
           {
             "day": "2026-11-19",
+            "cents": 0.4
+          },
+          {
+            "day": "2026-11-20",
             "cents": 0.4
           }
         ],
@@ -16314,6 +16386,10 @@
           {
             "day": "2026-11-19",
             "cents": 1.2
+          },
+          {
+            "day": "2026-11-20",
+            "cents": 1.2
           }
         ],
         "zemmour": [
@@ -16875,6 +16951,10 @@
           },
           {
             "day": "2026-11-19",
+            "cents": 0.6
+          },
+          {
+            "day": "2026-11-20",
             "cents": 0.6
           }
         ],
@@ -17734,6 +17814,10 @@
           {
             "day": "2026-11-19",
             "cents": 0.9
+          },
+          {
+            "day": "2026-11-20",
+            "cents": 1
           }
         ],
         "lisnard": [
@@ -18388,6 +18472,10 @@
           {
             "day": "2026-11-19",
             "cents": 13.5
+          },
+          {
+            "day": "2026-11-20",
+            "cents": 14.5
           }
         ],
         "bardella": [
@@ -19306,6 +19394,10 @@
           {
             "day": "2026-11-19",
             "cents": 3
+          },
+          {
+            "day": "2026-11-20",
+            "cents": 2.8
           }
         ]
       }
@@ -19314,17 +19406,17 @@
       "lepen": 45.7,
       "bardella": 1.7,
       "zemmour": 0.3,
-      "philippe": 5.5,
-      "lisnard": 18.6,
+      "philippe": 6.5,
+      "lisnard": 17.8,
       "ruffin": 0.1,
       "attal": 0.4,
-      "retailleau": 0.5,
-      "hollande": 3,
+      "retailleau": 0.6,
+      "hollande": 2.7,
       "glucksmann": 1.5,
       "melenchon": 14.5,
       "tondelier": 0.1,
       "roussel": 0.1,
-      "villepin": 1.4,
+      "villepin": 2.8,
       "knafo": 0.2,
       "lecornu": 0.1
     },
@@ -19332,17 +19424,17 @@
       "glucksmann": null,
       "tondelier": null,
       "roussel": null,
-      "bardella": 3,
+      "bardella": 2.8,
       "attal": 0.4,
       "retailleau": 1.2,
-      "villepin": 0.9,
+      "villepin": 1,
       "zemmour": 0.6,
       "hollande": 2.5,
       "knafo": 0.4,
-      "lisnard": 13.5,
-      "lepen": 52.5,
+      "lisnard": 14.5,
+      "lepen": 50.5,
       "lecornu": 0.5,
-      "philippe": 5.3,
+      "philippe": 4.7,
       "ruffin": 0.5,
       "melenchon": 12.5
     }
